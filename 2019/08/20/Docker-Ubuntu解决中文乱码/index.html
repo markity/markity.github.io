@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="问题引出Docker中的Ubuntu镜像特别干净, 不但没有vi, wget等基础工具, 甚至连字符集也没几个, 导致无法输入中文 查看镜像内的字符集, 发现仅仅自带3个, 默认使用的字符集是POSIX 1234567891011121314151617181920$ locale -aCC.UTF-8POSIX$ localeLANG&#x3D;LANGUAGE&#x3D;LC_CTYPE&amp;#x">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker Ubuntu解决中文乱码">
+<meta property="og:url" content="https://blog.markity.cn/2019/08/20/Docker-Ubuntu%E8%A7%A3%E5%86%B3%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81/index.html">
+<meta property="og:site_name" content="Markity&#39;s notes">
+<meta property="og:description" content="问题引出Docker中的Ubuntu镜像特别干净, 不但没有vi, wget等基础工具, 甚至连字符集也没几个, 导致无法输入中文 查看镜像内的字符集, 发现仅仅自带3个, 默认使用的字符集是POSIX 1234567891011121314151617181920$ locale -aCC.UTF-8POSIX$ localeLANG&#x3D;LANGUAGE&#x3D;LC_CTYPE&amp;#x">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-08-20T12:34:19.000Z">
+<meta property="article:modified_time" content="2020-01-25T04:03:40.952Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="markity">
+<meta property="article:tag" content="markity blog">
+<meta property="article:tag" content="markity note">
+<meta property="article:tag" content="markity notes">
+<meta property="article:tag" content="blog">
+<meta property="article:tag" content="notes">
+<meta property="article:tag" content="博客">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"remove","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://blog.markity.cn/2019/08/20/Docker-Ubuntu解决中文乱码/"/>
+
+
+
+
+
+  <title>Docker Ubuntu解决中文乱码 | Markity's notes</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Markity's notes</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">个人博客</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/2019/08/20/Docker-Ubuntu%E8%A7%A3%E5%86%B3%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Markity">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Markity's notes">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Docker Ubuntu解决中文乱码</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-08-20T12:34:19+00:00">
+                2019-08-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="问题引出"><a href="#问题引出" class="headerlink" title="问题引出"></a>问题引出</h1><p><code>Docker</code>中的<code>Ubuntu</code>镜像特别干净, 不但没有<code>vi</code>, <code>wget</code>等基础工具, 甚至连字符集也没几个, 导致无法输入中文</p>
+<p>查看镜像内的字符集, 发现仅仅自带3个, 默认使用的字符集是<code>POSIX</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ locale -a</span><br><span class="line">C</span><br><span class="line">C.UTF-8</span><br><span class="line">POSIX</span><br><span class="line">$ locale</span><br><span class="line">LANG&#x3D;</span><br><span class="line">LANGUAGE&#x3D;</span><br><span class="line">LC_CTYPE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_NUMERIC&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_TIME&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_COLLATE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MONETARY&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MESSAGES&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_PAPER&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_NAME&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_ADDRESS&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_TELEPHONE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MEASUREMENT&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_IDENTIFICATION&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_ALL&#x3D;</span><br></pre></td></tr></table></figure>
+
+<h1 id="设置字符集"><a href="#设置字符集" class="headerlink" title="设置字符集"></a>设置字符集</h1><p><strong>选择字符集</strong></p>
+<p>要使用中文, 最合适的字符集莫过于<code>utf8</code>了, 它支持了全世界大多数文字字符, 俗称”万国码”</p>
+<p>我们可选的<code>utf8</code>字符集有<code>zh_CN.uft8</code>或者<code>en_US.utf8</code>, 实际上它们都是<code>utf8</code>字符集, 对字符的支持等价。唯一差别只是标识了用户使用的语言而已, 系统的菜单、程序的工具栏语言、输入法默认语言随它而定</p>
+<p>服务器建议使用<code>en_US.utf8</code>, 避免踩坑</p>
+<p><strong>安装字符集并设置环境变量</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ apt update &amp;&amp; apt install locales</span><br><span class="line">...省略输出...</span><br><span class="line">$ locale-gen en_US.utf8</span><br><span class="line">Generating locales (this might take a while)...</span><br><span class="line">  en_US.UTF-8... done</span><br><span class="line">Generation complete.</span><br><span class="line">$ echo &#39;export LANG&#x3D;en_US.utf8&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br><span class="line">$ echo &#39;export LANGUAGE&#x3D;en_US:en&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br><span class="line">$ echo &#39;export LC_ALL&#x3D;en_US.utf8&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>说明:</p>
+<ol>
+<li>第一条命令是更新源并安装<code>locales</code>软件包, 它包含<code>locale-gen</code>这个工具, 用来获取字符集</li>
+<li>第二条命令是获取<code>en_US.utf8</code>字符集</li>
+<li>最后三条命令将设置环境变量的命令写入<code>/etc/bash.bashrc</code>文件, 每次打开终端就会加载里面的语句</li>
+</ol>
+<p><strong>测试字符集</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ bash</span><br><span class="line">$ locale</span><br><span class="line">LANG&#x3D;en_US.utf8</span><br><span class="line">LANGUAGE&#x3D;en_US:en</span><br><span class="line">LC_CTYPE&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_NUMERIC&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_TIME&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_COLLATE&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_MONETARY&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_MESSAGES&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_PAPER&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_NAME&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_ADDRESS&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_TELEPHONE&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_MEASUREMENT&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_IDENTIFICATION&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_ALL&#x3D;en_US.utf8</span><br><span class="line">$ 我能输入中文了</span><br><span class="line">bash: 我能输入中文了: command not found</span><br></pre></td></tr></table></figure>
+
+<p>说明:</p>
+<ol>
+<li>第一条语句打开了一个新的终端, 加载了<code>/etc/bash.bashrc</code>文件, 所以字符集设置生效了</li>
+</ol>
+<h1 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h1><p>此方法在<code>Ubuntu16.04+</code>亲测可行, 如不可用, 可发送邮件反馈问题, 谢谢!</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/08/18/%E8%8E%B7%E5%8F%96Go%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E8%B7%AF%E5%BE%84/" rel="next" title="获取Go可执行文件路径">
+                <i class="fa fa-chevron-left"></i> 获取Go可执行文件路径
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/09/13/pip%E5%8D%B8%E8%BD%BD%E6%89%80%E6%9C%89%E7%AC%AC%E4%B8%89%E6%96%B9%E5%8C%85/" rel="prev" title="Python pip卸载所有第三方包">
+                Python pip卸载所有第三方包 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Markity</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="什么是Go Module?Go Module是Go语言官方开发的模块管理机制。它简洁易用且易于部署, 摆脱了对GOPATH的依赖, 未来将是Go语言主流的模块管理系统  注意: Go Module发布于Go 1.11, 如果Go版本低于1.11将无法使用  如何使用第一步: 在GOPATH&#x2F;src目录以外建立项目目录, 并初始化模块1234$ mkdir hello$ cd .&#x2F;hell">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go Module基本使用">
+<meta property="og:url" content="https://blog.markity.cn/2019/08/17/Go-Module%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="Markity&#39;s notes">
+<meta property="og:description" content="什么是Go Module?Go Module是Go语言官方开发的模块管理机制。它简洁易用且易于部署, 摆脱了对GOPATH的依赖, 未来将是Go语言主流的模块管理系统  注意: Go Module发布于Go 1.11, 如果Go版本低于1.11将无法使用  如何使用第一步: 在GOPATH&#x2F;src目录以外建立项目目录, 并初始化模块1234$ mkdir hello$ cd .&#x2F;hell">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-08-17T17:42:20.000Z">
+<meta property="article:modified_time" content="2020-01-25T04:03:40.955Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="markity">
+<meta property="article:tag" content="markity blog">
+<meta property="article:tag" content="markity note">
+<meta property="article:tag" content="markity notes">
+<meta property="article:tag" content="blog">
+<meta property="article:tag" content="notes">
+<meta property="article:tag" content="博客">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"remove","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://blog.markity.cn/2019/08/17/Go-Module基本使用/"/>
+
+
+
+
+
+  <title>Go Module基本使用 | Markity's notes</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Markity's notes</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">个人博客</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/2019/08/17/Go-Module%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Markity">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Markity's notes">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Go Module基本使用</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-08-17T17:42:20+00:00">
+                2019-08-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="什么是Go-Module"><a href="#什么是Go-Module" class="headerlink" title="什么是Go Module?"></a>什么是Go Module?</h1><p><code>Go Module</code>是<code>Go</code>语言官方开发的模块管理机制。它简洁易用且易于部署, 摆脱了对<code>GOPATH</code>的依赖, 未来将是<code>Go</code>语言主流的模块管理系统</p>
+<blockquote>
+<p>注意: <code>Go Module</code>发布于<code>Go 1.11</code>, 如果Go版本低于1.11将无法使用</p>
+</blockquote>
+<h1 id="如何使用"><a href="#如何使用" class="headerlink" title="如何使用"></a>如何使用</h1><h3 id="第一步-在GOPATH-src目录以外建立项目目录-并初始化模块"><a href="#第一步-在GOPATH-src目录以外建立项目目录-并初始化模块" class="headerlink" title="第一步: 在GOPATH/src目录以外建立项目目录, 并初始化模块"></a>第一步: 在GOPATH/src目录以外建立项目目录, 并初始化模块</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir hello</span><br><span class="line">$ cd .&#x2F;hello&#x2F;</span><br><span class="line">[hello] $ go mod init hello</span><br><span class="line">go: creating new go.mod: module hello</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>初始化模块命令: go mod init 模块名<br>模块名有何作用: 用于标识当前模块路径, 以引入当前模块中的自定义包</p>
+</blockquote>
+<p><strong>为什么在<code>GOPATH/src</code>以外建立项目?</strong></p>
+<p>由于基于<code>GOPATH</code>的包管理仍然盛行, 如果要使用<code>Go Module</code>, 必须在<code>GOPATH/src</code>以外建立目录, 这样可以避免很多坑</p>
+<p><strong>初始化模块之后有何变化?</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[hello] $ ls</span><br><span class="line">go.mod</span><br><span class="line">[hello] $ cat .&#x2F;go.mod</span><br><span class="line">module hello</span><br><span class="line"></span><br><span class="line">go 1.12</span><br></pre></td></tr></table></figure>
+
+<p>由此看来初始化模块操作只是创建了一个新文件<code>go.mod</code>来记录模块名以及<code>Go</code>版本</p>
+<h3 id="第二步-编写项目"><a href="#第二步-编写项目" class="headerlink" title="第二步: 编写项目"></a>第二步: 编写项目</h3><p><em>项目结构</em></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">|-- route</span><br><span class="line">|   &#96;-- index.go</span><br><span class="line">|</span><br><span class="line">|-- exec</span><br><span class="line">|   &#96;-- main.go</span><br><span class="line">|</span><br><span class="line">|-- go.mod</span><br></pre></td></tr></table></figure>
+
+<p><em>index.go</em></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> route</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"net/http"</span></span><br><span class="line"></span><br><span class="line">    <span class="string">"github.com/gin-gonic/gin"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IndexGet</span><span class="params">(c *gin.Context)</span></span> &#123;</span><br><span class="line">    c.JSON(http.StatusOK, gin.H&#123;</span><br><span class="line">        <span class="string">"message"</span>: <span class="string">"Hello Module"</span>,</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>main.go</em></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="comment">// 引入github上的包</span></span><br><span class="line">    <span class="string">"github.com/gin-gonic/gin"</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 引入模块下的自定义包格式: 模块名/包路径</span></span><br><span class="line">    <span class="comment">// 注意go module引入包不允许使用相对路径!!!</span></span><br><span class="line">    <span class="string">"hello/route"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    app := gin.Default()</span><br><span class="line"></span><br><span class="line">    app.GET(<span class="string">"/"</span>, route.IndexGet)</span><br><span class="line"></span><br><span class="line">    app.Run(<span class="string">"127.0.0.1:80"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第三步-运行项目"><a href="#第三步-运行项目" class="headerlink" title="第三步: 运行项目"></a>第三步: 运行项目</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[hello] $ cd .&#x2F;exec&#x2F;</span><br><span class="line">[hello&#x2F;exec] $ go run .&#x2F;main.go</span><br><span class="line">go: finding github.com&#x2F;gin-gonic&#x2F;gin v1.4.0</span><br><span class="line">go: finding gopkg.in&#x2F;yaml.v2 v2.2.2</span><br><span class="line">go: finding github.com&#x2F;mattn&#x2F;go-isatty v0.0.7</span><br><span class="line">...更多依赖信息...</span><br><span class="line">[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.</span><br><span class="line"></span><br><span class="line">[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.</span><br><span class="line"> - using env:   export GIN_MODE&#x3D;release</span><br><span class="line"> - using code:  gin.SetMode(gin.ReleaseMode)</span><br><span class="line"></span><br><span class="line">[GIN-debug] GET    &#x2F;                         --&gt; hello&#x2F;route.IndexGet (3 handlers)</span><br><span class="line">[GIN-debug] Listening and serving HTTP on 127.0.0.1:80</span><br></pre></td></tr></table></figure>
+
+<p><strong>发生了什么?</strong></p>
+<p>go run命令自动在网络搜索依赖项, 并成功运行main.go</p>
+<p><strong>模块发生了什么变化?</strong></p>
+<p>使用<code>go run ./main.go</code>运行项目之后, 模块下的<code>go.mod</code>文件发生了变化, 并且新增了一个文件<code>go.sum</code></p>
+<p><em>go.mod</em></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">module hello</span><br><span class="line"></span><br><span class="line">go 1.12</span><br><span class="line"></span><br><span class="line">require github.com&#x2F;gin-gonic&#x2F;gin v1.4.0</span><br></pre></td></tr></table></figure>
+
+<p><em>go.sum</em></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">github.com&#x2F;davecgh&#x2F;go-spew v1.1.0&#x2F;go.mod h1:J7Y8YcW2NihsgmVo&#x2F;mv3lAwl&#x2F;skON4iLHjSsI+c5H38&#x3D;</span><br><span class="line">github.com&#x2F;gin-contrib&#x2F;sse v0.0.0-20190301062529-5545eab6dad3 h1:t8FVkw33L+wilf2QiWkw0UV77qRpcH&#x2F;JHPKGpKa2E8g&#x3D;</span><br><span class="line">github.com&#x2F;gin-contrib&#x2F;sse v0.0.0-20190301062529-5545eab6dad3&#x2F;go.mod h1:VJ0WA2NBN22VlZ2dKZQPAPnyWw5XTlK1KymzLKsr59s&#x3D;</span><br><span class="line">github.com&#x2F;gin-gonic&#x2F;gin v1.4.0 h1:3tMoCCfM7ppqsR0ptz&#x2F;wi1impNpT7&#x2F;9wQtMZ8lr1mCQ&#x3D;</span><br><span class="line">github.com&#x2F;gin-gonic&#x2F;gin v1.4.0&#x2F;go.mod h1:OW2EZn3DO8Ln9oIKOvM++LBO+5UPHJJDH72&#x2F;q&#x2F;3rZdM&#x3D;</span><br><span class="line">github.com&#x2F;golang&#x2F;protobuf v1.3.1 h1:YF8+flBXS5eO826T4nzqPrxfhQThhXl0YzfuUPu4SBg&#x3D;</span><br><span class="line">github.com&#x2F;golang&#x2F;protobuf v1.3.1&#x2F;go.mod h1:6lQm79b+lXiMfvg&#x2F;cZm0SGofjICqVBUtrP5yJMmIC1U&#x3D;</span><br><span class="line">github.com&#x2F;json-iterator&#x2F;go v1.1.6&#x2F;go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU&#x3D;</span><br><span class="line">github.com&#x2F;mattn&#x2F;go-isatty v0.0.7 h1:UvyT9uN+3r7yLEYSlJsbQGdsaB&#x2F;a0DlgWP3pql6iwOc&#x3D;</span><br><span class="line">github.com&#x2F;mattn&#x2F;go-isatty v0.0.7&#x2F;go.mod h1:Iq45c&#x2F;XA43vh69&#x2F;j3iqttzPXn0bhXyGjM0Hdxcsrc5s&#x3D;</span><br><span class="line">github.com&#x2F;modern-go&#x2F;concurrent v0.0.0-20180306012644-bacd9c7ef1dd&#x2F;go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q&#x3D;</span><br><span class="line">github.com&#x2F;modern-go&#x2F;reflect2 v1.0.1&#x2F;go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0&#x3D;</span><br><span class="line">github.com&#x2F;pmezard&#x2F;go-difflib v1.0.0&#x2F;go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ&#x2F;4&#x3D;</span><br><span class="line">github.com&#x2F;stretchr&#x2F;objx v0.1.0&#x2F;go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME&#x3D;</span><br><span class="line">github.com&#x2F;stretchr&#x2F;testify v1.3.0&#x2F;go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI&#x3D;</span><br><span class="line">github.com&#x2F;ugorji&#x2F;go v1.1.4 h1:j4s+tAvLfL3bZyefP2SEWmhBzmuIlH&#x2F;eqNuPdFPgngw&#x3D;</span><br><span class="line">github.com&#x2F;ugorji&#x2F;go v1.1.4&#x2F;go.mod h1:uQMGLiO92mf5W77hV&#x2F;PUCpI3pbzQx3CRekS0kk+RGrc&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;crypto v0.0.0-20190308221718-c2843e01d9a2&#x2F;go.mod h1:djNgcEr1&#x2F;C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;net v0.0.0-20190503192946-f4e77d36d62c&#x2F;go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;sys v0.0.0-20190215142949-d0b11bdaac8a&#x2F;go.mod h1:STP8DvDyc&#x2F;dI5b8T5hshtkjS+E42TnysNCUPdjciGhY&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;sys v0.0.0-20190222072716-a9d3bda3a223&#x2F;go.mod h1:STP8DvDyc&#x2F;dI5b8T5hshtkjS+E42TnysNCUPdjciGhY&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;text v0.3.0&#x2F;go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi&#x2F;IjpwHt7yyuwOQ&#x3D;</span><br><span class="line">gopkg.in&#x2F;check.v1 v0.0.0-20161208181325-20d25e280405&#x2F;go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof&#x2F;cbN4VW5Yz0&#x3D;</span><br><span class="line">gopkg.in&#x2F;go-playground&#x2F;assert.v1 v1.2.1&#x2F;go.mod h1:9RXL0bg&#x2F;zibRAgZUYszZSwO&#x2F;z8Y&#x2F;a8bDuhia5mkpMnE&#x3D;</span><br><span class="line">gopkg.in&#x2F;go-playground&#x2F;validator.v8 v8.18.2 h1:lFB4DoMU6B626w8ny76MV7VX6W2VHct2GVOI3xgiMrQ&#x3D;</span><br><span class="line">gopkg.in&#x2F;go-playground&#x2F;validator.v8 v8.18.2&#x2F;go.mod h1:RX2a&#x2F;7Ha8BgOhfk7j780h4&#x2F;u&#x2F;RRjR0eouCJSH80&#x2F;M2Y&#x3D;</span><br><span class="line">gopkg.in&#x2F;yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw&#x3D;</span><br><span class="line">gopkg.in&#x2F;yaml.v2 v2.2.2&#x2F;go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI&#x3D;</span><br></pre></td></tr></table></figure>
+
+<p>此时, 再次执行命令<code>go run ./main.go</code>, 不再出现搜寻依赖信息, 程序直接跑了起来</p>
+<p><strong>结论</strong><br>由此可见, 当编译或运行<code>Go Module</code>目录下的文件, <code>Go</code>命令识别到此项目使用<code>Go Module</code>, 便不再从<code>GOPATH/src</code>寻找依赖。<code>Go</code>工具将自动搜寻并下载依赖(保存在<code>GOPATH/pkg/mod</code>中), 并将项目依赖及其具体版本信息记录在<code>go.mod</code>和<code>go.sum</code>中</p>
+<p>这些文件通常不需要程序员自己编写, 交给<code>Go</code>命令管理即可</p>
+<h3 id="常用的模块管理命令"><a href="#常用的模块管理命令" class="headerlink" title="常用的模块管理命令"></a>常用的模块管理命令</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>用法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>init</td>
+<td>go mod init 模块名</td>
+<td>在当前目录初始化模块</td>
+</tr>
+<tr>
+<td>graph</td>
+<td>go mod graph</td>
+<td>打印当前模块依赖信息</td>
+</tr>
+<tr>
+<td>tidy</td>
+<td>go mod tidy</td>
+<td>拉取缺少的模块,移除不用的模块, 依赖信息将记录在<code>go.mod</code>和<code>go.sum</code>文件中</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>这里只是列举了几个本人感觉用得上的命令,并不齐全,更多命令请参见官方文档</p>
+</blockquote>
+<hr>
+<h1 id="补充阅读-使用GOPROXY代理Go-Module的依赖拉取"><a href="#补充阅读-使用GOPROXY代理Go-Module的依赖拉取" class="headerlink" title="补充阅读: 使用GOPROXY代理Go Module的依赖拉取"></a>补充阅读: 使用GOPROXY代理Go Module的依赖拉取</h1><p>很多时候由于网络和地域问题, 有的包被墙无法下载(如在中国无法下载<code>golang.org/x</code>包), 设置网络代理才能正常拉取</p>
+<p>幸运的是, <code>GO Module</code>提供了便捷的代理设置, 简单配置环境变量即可使用<br>目前全球有许多免费的Go模块代理如<code>https://goproxy.io</code></p>
+<p>Ubuntu:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ echo &#39;export GOPROXY&#x3D;https:&#x2F;&#x2F;goproxy.io&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>Centos:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ echo &#39;export GOPROXY&#x3D;https:&#x2F;&#x2F;goproxy.io&#39; &gt;&gt; &#x2F;etc&#x2F;bashrc</span><br></pre></td></tr></table></figure>
+
+<p>Windows:<br>右键计算机/此电脑 -&gt; 属性 -&gt; 高级系统设置 -&gt; 环境变量 -&gt; xxx的用户变量下的新建</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">变量名:GOPROXY</span><br><span class="line">变量值:https:&#x2F;&#x2F;goproxy.io</span><br></pre></td></tr></table></figure>
+
+<p>重启终端即生效, 这样配置过后, <code>Go module</code>拉取依赖将自动走<code>GOPROXY</code>代理</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/08/17/Linux%E5%AE%89%E8%A3%85Golang/" rel="prev" title="Linux安装Golang">
+                Linux安装Golang <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Markity</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

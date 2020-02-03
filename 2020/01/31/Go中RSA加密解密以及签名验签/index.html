@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="概念介绍RSA是一种非对称加密算法, 密钥分为公钥和私钥, 公钥用于加密, 私钥用于解密. 拥有私钥的一方可以对明文数据进行签名, 拥有公钥的一方若同时拥有明文数据与签名, 则可以对签名进行验签, 检验此数据是否由来自拥有私钥的一方, 这样可以达到身份校验以及验证数据完整性这样的功能. 支付宝API的签名校验就使用了RSA签名算法 数学算法其数学原理参考这里 生成密钥12$ openssl gen">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go中RSA加密解密以及签名验签">
+<meta property="og:url" content="https://blog.markity.cn/2020/01/31/Go%E4%B8%ADRSA%E5%8A%A0%E5%AF%86%E8%A7%A3%E5%AF%86%E4%BB%A5%E5%8F%8A%E7%AD%BE%E5%90%8D%E9%AA%8C%E7%AD%BE/index.html">
+<meta property="og:site_name" content="Markity&#39;s notes">
+<meta property="og:description" content="概念介绍RSA是一种非对称加密算法, 密钥分为公钥和私钥, 公钥用于加密, 私钥用于解密. 拥有私钥的一方可以对明文数据进行签名, 拥有公钥的一方若同时拥有明文数据与签名, 则可以对签名进行验签, 检验此数据是否由来自拥有私钥的一方, 这样可以达到身份校验以及验证数据完整性这样的功能. 支付宝API的签名校验就使用了RSA签名算法 数学算法其数学原理参考这里 生成密钥12$ openssl gen">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-01-31T09:58:44.000Z">
+<meta property="article:modified_time" content="2020-02-03T06:00:21.649Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="markity">
+<meta property="article:tag" content="markity blog">
+<meta property="article:tag" content="markity note">
+<meta property="article:tag" content="markity notes">
+<meta property="article:tag" content="blog">
+<meta property="article:tag" content="notes">
+<meta property="article:tag" content="博客">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"remove","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://blog.markity.cn/2020/01/31/Go中RSA加密解密以及签名验签/"/>
+
+
+
+
+
+  <title>Go中RSA加密解密以及签名验签 | Markity's notes</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Markity's notes</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">个人博客</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/2020/01/31/Go%E4%B8%ADRSA%E5%8A%A0%E5%AF%86%E8%A7%A3%E5%AF%86%E4%BB%A5%E5%8F%8A%E7%AD%BE%E5%90%8D%E9%AA%8C%E7%AD%BE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Markity">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Markity's notes">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Go中RSA加密解密以及签名验签</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-01-31T09:58:44+00:00">
+                2020-01-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="概念介绍"><a href="#概念介绍" class="headerlink" title="概念介绍"></a>概念介绍</h1><p>RSA是一种非对称加密算法, 密钥分为公钥和私钥, 公钥用于<code>加密</code>, 私钥用于<code>解密</code>. 拥有私钥的一方可以对明文数据进行<code>签名</code>, 拥有公钥的一方若同时拥有明文数据与签名, 则可以对签名进行<code>验签</code>, 检验此数据是否由来自拥有私钥的一方, 这样可以达到身份校验以及验证数据完整性这样的功能. 支付宝API的签名校验就使用了<code>RSA</code>签名算法</p>
+<h1 id="数学算法"><a href="#数学算法" class="headerlink" title="数学算法"></a>数学算法</h1><p>其数学原理参考<a href="https://zhuanlan.zhihu.com/p/44185847" target="_blank" rel="noopener" title="一文搞懂 RSA 算法">这里</a></p>
+<h1 id="生成密钥"><a href="#生成密钥" class="headerlink" title="生成密钥"></a>生成密钥</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> openssl genrsa -out rsa_private_key.pem 2048 <span class="comment">#生成私钥, 长度2048bits</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> openssl rsa -<span class="keyword">in</span> rsa_private_key.pem -pubout -out rsa_public_key.pem <span class="comment">#生成公钥</span></span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>密钥长度越大, 理论越安全, 但是计算速度则越慢, 目前普遍被认为安全的密钥长度是2048bits</p>
+</blockquote>
+<h1 id="在Go中加载公钥和私钥"><a href="#在Go中加载公钥和私钥" class="headerlink" title="在Go中加载公钥和私钥"></a>在Go中加载公钥和私钥</h1><p><strong>加载公钥</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 首先读取文件</span></span><br><span class="line">pubFileBytes, err := ioutil.ReadFile(<span class="string">"rsa_public_key.pem"</span>)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"读取公钥文件失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 加载pem块</span></span><br><span class="line">pubBlock, _ := pem.Decode(pubFileBytes)</span><br><span class="line"><span class="keyword">if</span> block == <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"不合法的公钥"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 解析公钥, 必须使用ParsePKIXPublicKey方法, 它是解析rsa公钥的通用方法, 注意, 使用ParsePKCS1PublicKey是没用的</span></span><br><span class="line">pubKeyInterface, err := x509.ParsePKIXPublicKey(pubBlock.Bytes)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"解析公钥失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 转换为*rsa.PublicKey类型</span></span><br><span class="line">pubKey, ok := pubKeyInterface.(*rsa.PublicKey)</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">    fmt.Println(<span class="string">"这个公钥不是rsa公钥"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>加载私钥</strong></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 读取文件</span></span><br><span class="line">priFileBytes, err := ioutil.ReadFile(<span class="string">"rsa_private_key.pem"</span>)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"读取私钥文件失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 加载pem块</span></span><br><span class="line">priBlock, _ := pem.Decode(priFileBytes)</span><br><span class="line"><span class="keyword">if</span> block == <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"不合法的私钥"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 解析私钥, ParsePKCS1PrivateKey用于解析PKCS1格式的私钥, 一般除java惯用PKCS8格式, 其他语言通通使用此格式</span></span><br><span class="line">priKey, err := x509.ParsePKCS1PrivateKey(priBlock.Bytes)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"解析私钥失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用公钥加密"><a href="#使用公钥加密" class="headerlink" title="使用公钥加密"></a>使用公钥加密</h1><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">clearText := []<span class="keyword">byte</span>(<span class="string">"我是密文, I am secret"</span>)</span><br><span class="line">cipherText, err := rsa.EncryptPKCS1v15(rand.Reader, pubKey, clearText)</span><br><span class="line"><span class="comment">// 这里出错一般都是由于公钥有问题, 如果公钥确实没有问题, 可以忽略这个err</span></span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"加密失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用私钥解密"><a href="#使用私钥解密" class="headerlink" title="使用私钥解密"></a>使用私钥解密</h1><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">clearText2, err := rsa.DecryptPKCS1v15(rand.Reader, priKey, cipherText)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"解密失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line">fmt.Println(<span class="keyword">string</span>(clearText) == <span class="keyword">string</span>(clearText2)) <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="使用私钥签名"><a href="#使用私钥签名" class="headerlink" title="使用私钥签名"></a>使用私钥签名</h1><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这里使用SHA256进行签名, 实际上任何hash.Hash类型都行</span></span><br><span class="line">h := crypto.SHA256.New()</span><br><span class="line">h.Write(clearText)</span><br><span class="line">hsashed := h.Sum(<span class="literal">nil</span>)</span><br><span class="line">signature, err := rsa.SignPKCS1v15(rand.Reader, priKey, crypto.SHA256, hashed)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"签名失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用公钥以及明文校验签名"><a href="#使用公钥以及明文校验签名" class="headerlink" title="使用公钥以及明文校验签名"></a>使用公钥以及明文校验签名</h1><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">h := crypto.SHA256.New()</span><br><span class="line">h.Write(clearText)</span><br><span class="line">hashed := h.Sum(<span class="literal">nil</span>)</span><br><span class="line"><span class="comment">// 检查err是否为nil, 来判断签名是否由拥有私钥的一方所签</span></span><br><span class="line"><span class="keyword">if</span> err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed, signature); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	fmt.Println(<span class="string">"签名有误, 校验错误"</span>)</span><br><span class="line">&#125;</span><br><span class="line">fmt.Println(<span class="string">"签名正确, 校验成功"</span>)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/01/20/linux%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/" rel="next" title="linux常用命令">
+                <i class="fa fa-chevron-left"></i> linux常用命令
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Markity</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

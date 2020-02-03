@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /archives/
+Allow: /about/
+
+Disallow: /lib/
+Disallow: /images/
+Disallow: /js/
+Disallow: /css/
+
+Sitemap: https://blog.markity.cn/sitemap.xml
