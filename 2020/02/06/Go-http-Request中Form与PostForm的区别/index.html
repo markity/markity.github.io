@@ -79,13 +79,15 @@
 
 
 
-<meta name="description" content="忠于技术,乐于分享">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Markity&#39;s notes">
-<meta property="og:url" content="https://blog.markity.cn/page/2/index.html">
+<meta name="description" content="Form合并了Query和请求体表单的数据, 使用它可以同时获取两者数据 PostForm仅仅包含请求体的表单数据  举个例子 服务端代码 12345678910111213141516171819202122package mainimport (	&quot;fmt&quot;	&quot;github.com&#x2F;gin-gonic&#x2F;gin&quot;)func main() &amp;#123;	router :&#x3D; gin.Default">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go http.Request中Form与PostForm的区别">
+<meta property="og:url" content="https://blog.markity.cn/2020/02/06/Go-http-Request%E4%B8%ADForm%E4%B8%8EPostForm%E7%9A%84%E5%8C%BA%E5%88%AB/index.html">
 <meta property="og:site_name" content="Markity&#39;s notes">
-<meta property="og:description" content="忠于技术,乐于分享">
+<meta property="og:description" content="Form合并了Query和请求体表单的数据, 使用它可以同时获取两者数据 PostForm仅仅包含请求体的表单数据  举个例子 服务端代码 12345678910111213141516171819202122package mainimport (	&quot;fmt&quot;	&quot;github.com&#x2F;gin-gonic&#x2F;gin&quot;)func main() &amp;#123;	router :&#x3D; gin.Default">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-02-06T05:20:22.000Z">
+<meta property="article:modified_time" content="2020-02-06T05:36:24.896Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="markity">
 <meta property="article:tag" content="markity blog">
@@ -127,13 +129,13 @@
 
 
 
-  <link rel="canonical" href="https://blog.markity.cn/page/2/"/>
+  <link rel="canonical" href="https://blog.markity.cn/2020/02/06/Go-http-Request中Form与PostForm的区别/"/>
 
 
 
 
 
-  <title>Markity's notes</title>
+  <title>Go http.Request中Form与PostForm的区别 | Markity's notes</title>
   
 
 
@@ -152,8 +154,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -236,9 +237,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -251,7 +252,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/2019/08/17/Linux%E5%AE%89%E8%A3%85Golang/">
+    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/2020/02/06/Go-http-Request%E4%B8%ADForm%E4%B8%8EPostForm%E7%9A%84%E5%8C%BA%E5%88%AB/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Markity">
@@ -268,9 +269,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/08/17/Linux%E5%AE%89%E8%A3%85Golang/" itemprop="url">Linux安装Golang</a></h1>
+          <h1 class="post-title" itemprop="name headline">Go http.Request中Form与PostForm的区别</h1>
         
 
         <div class="post-meta">
@@ -282,8 +281,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-08-17T19:06:46+00:00">
-                2019-08-17
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-02-06T05:20:22+00:00">
+                2020-02-06
               </time>
             
 
@@ -320,18 +319,19 @@
       
 
       
-        
-          
-          第一步: 下载已编译压缩包( go1.12.9.linux-amd64.tar.gz )12$ wget https:&#x2F;&#x2F;studygolang.com&#x2F;dl&#x2F;golang&#x2F;go1.12.9.linux-amd64.tar.gz...省略下载信息..
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2019/08/17/Linux%E5%AE%89%E8%A3%85Golang/#more" rel="contents">
-              Read more &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
+        <ul>
+<li><code>Form</code>合并了<code>Query</code>和请求体表单的数据, 使用它可以同时获取两者数据</li>
+<li><code>PostForm</code>仅仅包含请求体的表单数据</li>
+</ul>
+<p><strong>举个例子</strong></p>
+<p><em>服务端代码</em></p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="string">"github.com/gin-gonic/gin"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	router := gin.Default()</span><br><span class="line">	router.POST(<span class="string">"/"</span>, <span class="function"><span class="keyword">func</span><span class="params">(ctx *gin.Context)</span></span> &#123;</span><br><span class="line">        <span class="comment">// 值得注意的是, 使用PostForm和Form前必须用ParseForm()方法解析它们</span></span><br><span class="line">		<span class="keyword">if</span> err := ctx.Request.ParseForm(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			fmt.Println(err)</span><br><span class="line">			ctx.Writer.WriteString(<span class="string">"server error"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		ctx.Writer.WriteString(fmt.Sprintf(<span class="string">"PostForm的内容 %s\n"</span>, ctx.Request.PostForm))</span><br><span class="line">		ctx.Writer.WriteString(fmt.Sprintf(<span class="string">"Form的内容 %s"</span>, ctx.Request.Form))</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	router.Run(<span class="string">":8000"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>请求</em></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;?data1&#x3D;hello&amp;name&#x3D;markity HTTP&#x2F;1.1</span><br><span class="line">Host: 127.0.0.1:8000</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded</span><br><span class="line"></span><br><span class="line">data1&#x3D;world&amp;data2&#x3D;你好</span><br></pre></td></tr></table></figure>
+
+<p><em>响应</em></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">PostForm的内容 map[data1:[world] data2:[你好]]</span><br><span class="line">Form的内容 map[data1:[world hello] data2:[你好] name:[markity]]</span><br></pre></td></tr></table></figure>
       
     </div>
     
@@ -348,142 +348,28 @@
       
 
       
-
-      
-
       
       
-        <div class="post-eof"></div>
+
       
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/2019/08/17/Go-Module%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Markity">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Markity's notes">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/08/17/Go-Module%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/" itemprop="url">Go Module基本使用</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-08-17T17:42:20+00:00">
-                2019-08-17
-              </time>
+              <a href="/2020/01/31/Go%E4%B8%ADRSA%E5%8A%A0%E5%AF%86%E8%A7%A3%E5%AF%86%E4%BB%A5%E5%8F%8A%E7%AD%BE%E5%90%8D%E9%AA%8C%E7%AD%BE/" rel="next" title="Go中RSA加密解密以及签名验签">
+                <i class="fa fa-chevron-left"></i> Go中RSA加密解密以及签名验签
+              </a>
             
+          </div>
 
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
             
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          
-          什么是Go Module?Go Module是Go语言官方开发的模块管理机制。它简洁易用且易于部署, 摆脱了对GOPATH的依赖, 未来将是Go语言主流的模块管理系统
-
-注意: Go Module发布于Go 1.11, 如果Go版本低于1.11将无法使用
-
-如何使用第一步: 在GOPATH/src目
-          ...
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2019/08/17/Go-Module%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/#more" rel="contents">
-              Read more &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -493,14 +379,11 @@
   </article>
 
 
-    
-  </section>
 
-  
-  <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/">&lt;i class&#x3D;&quot;fa fa-angle-left&quot;&gt;&lt;&#x2F;i&gt;</a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
-  </nav>
-
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -508,6 +391,10 @@
 
 
           
+
+  
+
+
 
         </div>
         
@@ -635,6 +522,10 @@
   
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
