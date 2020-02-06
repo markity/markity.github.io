@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Go http.Request中Form与PostForm的区别</title>
+    <url>/2020/02/06/Go-http-Request%E4%B8%ADForm%E4%B8%8EPostForm%E7%9A%84%E5%8C%BA%E5%88%AB/</url>
+    <content><![CDATA[<ul>
+<li><code>Form</code>合并了<code>Query</code>和请求体表单的数据, 使用它可以同时获取两者数据</li>
+<li><code>PostForm</code>仅仅包含请求体的表单数据</li>
+</ul>
+<p><strong>举个例子</strong></p>
+<p><em>服务端代码</em></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="string">"github.com/gin-gonic/gin"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	router := gin.Default()</span><br><span class="line">	router.POST(<span class="string">"/"</span>, <span class="function"><span class="keyword">func</span><span class="params">(ctx *gin.Context)</span></span> &#123;</span><br><span class="line">        <span class="comment">// 值得注意的是, 使用PostForm和Form前必须用ParseForm()方法解析它们</span></span><br><span class="line">		<span class="keyword">if</span> err := ctx.Request.ParseForm(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			fmt.Println(err)</span><br><span class="line">			ctx.Writer.WriteString(<span class="string">"server error"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		ctx.Writer.WriteString(fmt.Sprintf(<span class="string">"PostForm的内容 %s\n"</span>, ctx.Request.PostForm))</span><br><span class="line">		ctx.Writer.WriteString(fmt.Sprintf(<span class="string">"Form的内容 %s"</span>, ctx.Request.Form))</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	router.Run(<span class="string">":8000"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>请求</em></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">POST &#x2F;?data1&#x3D;hello&amp;name&#x3D;markity HTTP&#x2F;1.1</span><br><span class="line">Host: 127.0.0.1:8000</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded</span><br><span class="line"></span><br><span class="line">data1&#x3D;world&amp;data2&#x3D;你好</span><br></pre></td></tr></table></figure>
+
+<p><em>响应</em></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">PostForm的内容 map[data1:[world] data2:[你好]]</span><br><span class="line">Form的内容 map[data1:[world hello] data2:[你好] name:[markity]]</span><br></pre></td></tr></table></figure>]]></content>
+  </entry>
+  <entry>
+    <title>Go中RSA加密解密以及签名验签</title>
+    <url>/2020/01/31/Go%E4%B8%ADRSA%E5%8A%A0%E5%AF%86%E8%A7%A3%E5%AF%86%E4%BB%A5%E5%8F%8A%E7%AD%BE%E5%90%8D%E9%AA%8C%E7%AD%BE/</url>
+    <content><![CDATA[<h1 id="概念介绍"><a href="#概念介绍" class="headerlink" title="概念介绍"></a>概念介绍</h1><p>RSA是一种非对称加密算法, 密钥分为公钥和私钥, 公钥用于<code>加密</code>, 私钥用于<code>解密</code>. 拥有私钥的一方可以对明文数据进行<code>签名</code>, 拥有公钥的一方若同时拥有明文数据与签名, 则可以对签名进行<code>验签</code>, 检验此数据是否由来自拥有私钥的一方, 这样可以达到身份校验以及验证数据完整性这样的功能. 支付宝API的签名校验就使用了<code>RSA</code>签名算法</p>
+<h1 id="数学算法"><a href="#数学算法" class="headerlink" title="数学算法"></a>数学算法</h1><p>其数学原理参考<a href="https://zhuanlan.zhihu.com/p/44185847" target="_blank" rel="noopener" title="一文搞懂 RSA 算法">这里</a></p>
+<h1 id="生成密钥"><a href="#生成密钥" class="headerlink" title="生成密钥"></a>生成密钥</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> openssl genrsa -out rsa_private_key.pem 2048 <span class="comment">#生成私钥, 长度2048bits</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> openssl rsa -<span class="keyword">in</span> rsa_private_key.pem -pubout -out rsa_public_key.pem <span class="comment">#生成公钥</span></span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>密钥长度越大, 理论越安全, 但是计算速度则越慢, 目前普遍被认为安全的密钥长度是2048bits</p>
+</blockquote>
+<h1 id="在Go中加载公钥和私钥"><a href="#在Go中加载公钥和私钥" class="headerlink" title="在Go中加载公钥和私钥"></a>在Go中加载公钥和私钥</h1><p><strong>加载公钥</strong></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 首先读取文件</span></span><br><span class="line">pubFileBytes, err := ioutil.ReadFile(<span class="string">"rsa_public_key.pem"</span>)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"读取公钥文件失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 加载pem块</span></span><br><span class="line">pubBlock, _ := pem.Decode(pubFileBytes)</span><br><span class="line"><span class="keyword">if</span> block == <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"不合法的公钥"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 解析公钥, 必须使用ParsePKIXPublicKey方法, 它是解析rsa公钥的通用方法, 注意, 使用ParsePKCS1PublicKey是没用的</span></span><br><span class="line">pubKeyInterface, err := x509.ParsePKIXPublicKey(pubBlock.Bytes)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"解析公钥失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 转换为*rsa.PublicKey类型</span></span><br><span class="line">pubKey, ok := pubKeyInterface.(*rsa.PublicKey)</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">    fmt.Println(<span class="string">"这个公钥不是rsa公钥"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>加载私钥</strong></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 读取文件</span></span><br><span class="line">priFileBytes, err := ioutil.ReadFile(<span class="string">"rsa_private_key.pem"</span>)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"读取私钥文件失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 加载pem块</span></span><br><span class="line">priBlock, _ := pem.Decode(priFileBytes)</span><br><span class="line"><span class="keyword">if</span> block == <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"不合法的私钥"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 解析私钥, ParsePKCS1PrivateKey用于解析PKCS1格式的私钥, 一般除java惯用PKCS8格式, 其他语言通通使用此格式</span></span><br><span class="line">priKey, err := x509.ParsePKCS1PrivateKey(priBlock.Bytes)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"解析私钥失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用公钥加密"><a href="#使用公钥加密" class="headerlink" title="使用公钥加密"></a>使用公钥加密</h1><figure class="highlight go"><table><tr><td class="code"><pre><span class="line">clearText := []<span class="keyword">byte</span>(<span class="string">"我是密文, I am secret"</span>)</span><br><span class="line">cipherText, err := rsa.EncryptPKCS1v15(rand.Reader, pubKey, clearText)</span><br><span class="line"><span class="comment">// 这里出错一般都是由于公钥有问题, 如果公钥确实没有问题, 可以忽略这个err</span></span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"加密失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用私钥解密"><a href="#使用私钥解密" class="headerlink" title="使用私钥解密"></a>使用私钥解密</h1><figure class="highlight go"><table><tr><td class="code"><pre><span class="line">clearText2, err := rsa.DecryptPKCS1v15(rand.Reader, priKey, cipherText)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"解密失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line">fmt.Println(<span class="keyword">string</span>(clearText) == <span class="keyword">string</span>(clearText2)) <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="使用私钥签名"><a href="#使用私钥签名" class="headerlink" title="使用私钥签名"></a>使用私钥签名</h1><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 这里使用SHA256进行签名, 实际上任何hash.Hash类型都行</span></span><br><span class="line">h := crypto.SHA256.New()</span><br><span class="line">h.Write(clearText)</span><br><span class="line">hsashed := h.Sum(<span class="literal">nil</span>)</span><br><span class="line">signature, err := rsa.SignPKCS1v15(rand.Reader, priKey, crypto.SHA256, hashed)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"签名失败"</span>)</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用公钥以及明文校验签名"><a href="#使用公钥以及明文校验签名" class="headerlink" title="使用公钥以及明文校验签名"></a>使用公钥以及明文校验签名</h1><figure class="highlight go"><table><tr><td class="code"><pre><span class="line">h := crypto.SHA256.New()</span><br><span class="line">h.Write(clearText)</span><br><span class="line">hashed := h.Sum(<span class="literal">nil</span>)</span><br><span class="line"><span class="comment">// 检查err是否为nil, 来判断签名是否由拥有私钥的一方所签</span></span><br><span class="line"><span class="keyword">if</span> err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed, signature); err != <span class="literal">nil</span> &#123;</span><br><span class="line">	fmt.Println(<span class="string">"签名有误, 校验错误"</span>)</span><br><span class="line">&#125;</span><br><span class="line">fmt.Println(<span class="string">"签名正确, 校验成功"</span>)</span><br></pre></td></tr></table></figure>
+
+<h1 id="推荐一下我写的便捷RSA工具"><a href="#推荐一下我写的便捷RSA工具" class="headerlink" title="推荐一下我写的便捷RSA工具"></a>推荐一下我写的便捷RSA工具</h1><p><a href="https://github.com/markity/goutils/blob/master/rsa/rsa.go" target="_blank" rel="noopener" title="传送门">传送门</a></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>linux常用命令</title>
+    <url>/2020/01/20/linux%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</url>
+    <content><![CDATA[<h1 id="压缩-解压缩命令-tar"><a href="#压缩-解压缩命令-tar" class="headerlink" title="压缩/解压缩命令( tar )"></a>压缩/解压缩命令( tar )</h1><p><strong>将文件或文件夹压缩为tar.gz文件格式</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> tar -czvf 目标压缩文件.tar.gz 文件或文件夹路径1 文件或文件夹路径2 ...</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>将文件或文件夹打包为tar文件格式</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&gt; tar -cvf 目标压缩文件.tar 文件或文件夹路径1 文件或文件夹路径2 ...</span><br></pre></td></tr></table></figure>
+
+<p><strong>将tar.gz格式解压缩到指定目录</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> tar -xzvf 压缩文件.tar.gz 目标目录路径</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>将tar格式解压缩到指定目录</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> tar -xvf 压缩文件.tar 目标目录路径</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="参数说明"><a href="#参数说明" class="headerlink" title="参数说明"></a>参数说明</h2><table>
+<thead>
+<tr>
+<th align="center">参数</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">-c</td>
+<td align="center">表明进行压缩操作</td>
+</tr>
+<tr>
+<td align="center">-z</td>
+<td align="center">表明使用gz格式对文件压缩</td>
+</tr>
+<tr>
+<td align="center">-v</td>
+<td align="center">在压缩过程中打印压缩项</td>
+</tr>
+<tr>
+<td align="center">-f</td>
+<td align="center">指定目标文件名. 其参数紧跟其后, 因此f参数必须在所有参数之后</td>
+</tr>
+<tr>
+<td align="center">-x</td>
+<td align="center">表明进行解压缩操作</td>
+</tr>
+</tbody></table>
+<h1 id="删除命令-rm"><a href="#删除命令-rm" class="headerlink" title="删除命令( rm )"></a>删除命令( rm )</h1><p><strong>删除文件</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> rm 文件路径</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>删除文件夹</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> rm -r 文件夹路径</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>无提示删除文件</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> rm -f 文件路径</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>无提示删除文件夹</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> rm -rf 文件夹路径</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="参数说明-1"><a href="#参数说明-1" class="headerlink" title="参数说明"></a>参数说明</h2><table>
+<thead>
+<tr>
+<th align="center">参数</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">-r</td>
+<td align="center">表明删除删除文件夹及内部所有内容</td>
+</tr>
+<tr>
+<td align="center">-f</td>
+<td align="center">表明删除时无任何提示, 忽略不存在项</td>
+</tr>
+</tbody></table>
+<h1 id="移动-mv"><a href="#移动-mv" class="headerlink" title="移动( mv )"></a>移动( mv )</h1><p><strong>移动文件或文件夹</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> mv 文件或文件夹路径 新的路径</span></span><br></pre></td></tr></table></figure>
+
+<p>注意: 若新的路径已有同名文件, 则默认覆盖.若希望在遇到同名文件时询问, 可以使用参数<code>-i</code>, 命令变为<code>&gt; mv -i 文件或文件夹路径 新的路径</code>.值得一提的是此命令可用作重命名文件或目录</p>
+<h1 id="查看内容-cat"><a href="#查看内容-cat" class="headerlink" title="查看内容( cat )"></a>查看内容( cat )</h1><p><strong>查看文件内容</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> cat 文件路径</span></span><br></pre></td></tr></table></figure>]]></content>
+  </entry>
+  <entry>
+    <title>Golang gtk3键盘事件监听</title>
+    <url>/2020/01/20/Golang-gtk3%E9%94%AE%E7%9B%98%E4%BA%8B%E4%BB%B6%E7%9B%91%E5%90%AC/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>源自C语言的gtk是优秀的图形开发框架, 许多语言均有其绑定.</p>
+<p>Golang中<code>github.com/gotk3/gotk3</code>对gtk3的绑定有很好的实现.</p>
+<h2 id="键盘事件监听示例代码"><a href="#键盘事件监听示例代码" class="headerlink" title="键盘事件监听示例代码"></a>键盘事件监听示例代码</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">	<span class="string">"log"</span></span><br><span class="line"></span><br><span class="line">	<span class="string">"github.com/gotk3/gotk3/gdk"</span></span><br><span class="line">	<span class="string">"github.com/gotk3/gotk3/gtk"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// 初始化GTK, 不使用任何参数</span></span><br><span class="line">	gtk.Init(<span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 创建一个 toplevel 类型的窗口, 这是gtk中最常用的窗口类型.</span></span><br><span class="line">	win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(<span class="string">"Unable to create window:"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 设置窗口标题</span></span><br><span class="line">	win.SetTitle(<span class="string">"Simple Example"</span>)</span><br><span class="line">	<span class="comment">// 点击窗口"关闭"按钮时, 窗口关闭而触发, 调用MainQuit()方法结束程序</span></span><br><span class="line">	win.Connect(<span class="string">"destroy"</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		gtk.MainQuit()</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="comment">// 绑定"按下键盘"事件</span></span><br><span class="line">	win.Connect(<span class="string">"key-press-event"</span>, <span class="function"><span class="keyword">func</span><span class="params">(w *gtk.Window, e *gdk.Event)</span></span> &#123;</span><br><span class="line">		<span class="comment">// 判断是否为指定按键: 左键</span></span><br><span class="line">		ek := gdk.EventKeyNewFromEvent(e)</span><br><span class="line">		<span class="keyword">if</span> ek.KeyVal() == gdk.KEY_Left &#123;</span><br><span class="line">			fmt.Println(<span class="string">"Left"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 添加一个Lable控件</span></span><br><span class="line">	l, err := gtk.LabelNew(<span class="string">"Hello, gotk3!"</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(<span class="string">"Unable to create label:"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	win.Add(l)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 设置不可调整窗口大小, 并设置窗口大小</span></span><br><span class="line">	win.SetResizable(<span class="literal">false</span>)</span><br><span class="line">	win.SetDefaultSize(<span class="number">800</span>, <span class="number">600</span>)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 展示窗口内所有控件</span></span><br><span class="line">	win.ShowAll()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 开启Main循环</span></span><br><span class="line">	gtk.Main()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+]]></content>
+  </entry>
+  <entry>
+    <title>C语言读取一行任意长度的字符串</title>
+    <url>/2019/10/02/C%E8%AF%AD%E8%A8%80%E8%AF%BB%E5%8F%96%E4%B8%80%E8%A1%8C%E4%BB%BB%E6%84%8F%E9%95%BF%E5%BA%A6%E5%AD%97%E7%AC%A6%E4%B8%B2/</url>
+    <content><![CDATA[<blockquote>
+<p>C语言库实现中有<code>fgets</code>这样的函数读取一行字符串。然而使用这个函数读入的字符数目有限, 不能读取任意字符长度的行字符串。因此我们可以使用<code>getchar</code>逐个读取字符, 当字符数组长度不够时使用<code>malloc</code>动态分配拓展字符数组内存, 达到读取一行任意长度字符串的效果</p>
+</blockquote>
+<h3 id="完整代码"><a href="#完整代码" class="headerlink" title="完整代码"></a>完整代码</h3><figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 已读入字符个数</span></span><br><span class="line">    <span class="keyword">int</span> n = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 初始分配32个字符数组内存, 其中最后一个用于存储空字符</span></span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">size</span> = <span class="number">32</span>;</span><br><span class="line">    <span class="keyword">char</span>* message = (<span class="keyword">char</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">char</span>)*<span class="built_in">size</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 循环读入单个字符</span></span><br><span class="line">    <span class="keyword">char</span> c;</span><br><span class="line">    <span class="keyword">while</span> ((c=getchar())!=<span class="string">'\n'</span>) &#123;</span><br><span class="line">        <span class="comment">// 当读到最后一个空间时重新分配</span></span><br><span class="line">        <span class="keyword">if</span> (n == <span class="built_in">size</span> - <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="comment">// 分配新字符数组, 采取指数增长策略</span></span><br><span class="line">            <span class="built_in">size</span> *= <span class="number">2</span>;</span><br><span class="line">            <span class="keyword">char</span>* newMessage = (<span class="keyword">char</span>*)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">char</span>)*<span class="built_in">size</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 复制原数组内容</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt;= n<span class="number">-1</span>; i++)</span><br><span class="line">            &#123;</span><br><span class="line">                newMessage[i] = message[i];</span><br><span class="line">            &#125;</span><br><span class="line">            message = newMessage;</span><br><span class="line">        &#125;</span><br><span class="line">        message[n] = c;</span><br><span class="line">        n++;</span><br><span class="line">    &#125;</span><br><span class="line">    message[n] = <span class="string">'\0'</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%s\n"</span>, message);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这个程序实现的内存拓容类似<code>Golang</code>切片的<code>append</code>拓容思想, 可以在<code>The Go Programing Language</code>一书中查阅相关内容</p>
+</blockquote>
+]]></content>
+  </entry>
+  <entry>
+    <title>Python pip卸载所有第三方包</title>
+    <url>/2019/09/13/pip%E5%8D%B8%E8%BD%BD%E6%89%80%E6%9C%89%E7%AC%AC%E4%B8%89%E6%96%B9%E5%8C%85/</url>
+    <content><![CDATA[<blockquote>
+<p>随着python的使用, 我们会安装越来越多的包, 手动一个一个卸载会耗费大量时间, 下面介绍如何快速卸载已安装的所有第三方包</p>
+</blockquote>
+<p>首先打开命令行, <code>windows</code>下<code>powershell</code>和<code>cmd</code>均可</p>
+<h2 id="将所有第三方包写入文件"><a href="#将所有第三方包写入文件" class="headerlink" title="将所有第三方包写入文件"></a>将所有第三方包写入文件</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">pip freeze &gt; uninstall</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>pip freeze</code>打印所有已安装的第三方包信息<br>而<code>&gt; uninstall</code>符号表示将输出重定向至名为<code>uninstall</code>的文件当中</p>
+</blockquote>
+<h2 id="卸载所有第三方包"><a href="#卸载所有第三方包" class="headerlink" title="卸载所有第三方包"></a>卸载所有第三方包</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">pip uninstall -r uninstall -y</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>-r uninstall</code>参数表示从文件<code>uninstall</code>中删除<br><code>-y</code>参数表示不询问, 直接全部卸载</p>
+</blockquote>
+]]></content>
+  </entry>
+  <entry>
+    <title>Docker Ubuntu解决中文乱码</title>
+    <url>/2019/08/20/Docker-Ubuntu%E8%A7%A3%E5%86%B3%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81/</url>
+    <content><![CDATA[<h1 id="问题引出"><a href="#问题引出" class="headerlink" title="问题引出"></a>问题引出</h1><p><code>Docker</code>中的<code>Ubuntu</code>镜像特别干净, 不但没有<code>vi</code>, <code>wget</code>等基础工具, 甚至连字符集也没几个, 导致无法输入中文</p>
+<p>查看镜像内的字符集, 发现仅仅自带3个, 默认使用的字符集是<code>POSIX</code></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ locale -a</span><br><span class="line">C</span><br><span class="line">C.UTF-8</span><br><span class="line">POSIX</span><br><span class="line">$ locale</span><br><span class="line">LANG&#x3D;</span><br><span class="line">LANGUAGE&#x3D;</span><br><span class="line">LC_CTYPE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_NUMERIC&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_TIME&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_COLLATE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MONETARY&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MESSAGES&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_PAPER&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_NAME&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_ADDRESS&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_TELEPHONE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MEASUREMENT&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_IDENTIFICATION&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_ALL&#x3D;</span><br></pre></td></tr></table></figure>
+
+<h1 id="设置字符集"><a href="#设置字符集" class="headerlink" title="设置字符集"></a>设置字符集</h1><p><strong>选择字符集</strong></p>
+<p>要使用中文, 最合适的字符集莫过于<code>utf8</code>了, 它支持了全世界大多数文字字符, 俗称”万国码”</p>
+<p>我们可选的<code>utf8</code>字符集有<code>zh_CN.uft8</code>或者<code>en_US.utf8</code>, 实际上它们都是<code>utf8</code>字符集, 对字符的支持等价。唯一差别只是标识了用户使用的语言而已, 系统的菜单、程序的工具栏语言、输入法默认语言随它而定</p>
+<p>服务器建议使用<code>en_US.utf8</code>, 避免踩坑</p>
+<p><strong>安装字符集并设置环境变量</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ apt update &amp;&amp; apt install locales</span><br><span class="line">...省略输出...</span><br><span class="line">$ locale-gen en_US.utf8</span><br><span class="line">Generating locales (this might take a while)...</span><br><span class="line">  en_US.UTF-8... done</span><br><span class="line">Generation complete.</span><br><span class="line">$ echo &#39;export LANG&#x3D;en_US.utf8&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br><span class="line">$ echo &#39;export LANGUAGE&#x3D;en_US:en&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br><span class="line">$ echo &#39;export LC_ALL&#x3D;en_US.utf8&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>说明:</p>
+<ol>
+<li>第一条命令是更新源并安装<code>locales</code>软件包, 它包含<code>locale-gen</code>这个工具, 用来获取字符集</li>
+<li>第二条命令是获取<code>en_US.utf8</code>字符集</li>
+<li>最后三条命令将设置环境变量的命令写入<code>/etc/bash.bashrc</code>文件, 每次打开终端就会加载里面的语句</li>
+</ol>
+<p><strong>测试字符集</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ bash</span><br><span class="line">$ locale</span><br><span class="line">LANG&#x3D;en_US.utf8</span><br><span class="line">LANGUAGE&#x3D;en_US:en</span><br><span class="line">LC_CTYPE&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_NUMERIC&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_TIME&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_COLLATE&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_MONETARY&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_MESSAGES&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_PAPER&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_NAME&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_ADDRESS&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_TELEPHONE&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_MEASUREMENT&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_IDENTIFICATION&#x3D;&quot;en_US.utf8&quot;</span><br><span class="line">LC_ALL&#x3D;en_US.utf8</span><br><span class="line">$ 我能输入中文了</span><br><span class="line">bash: 我能输入中文了: command not found</span><br></pre></td></tr></table></figure>
+
+<p>说明:</p>
+<ol>
+<li>第一条语句打开了一个新的终端, 加载了<code>/etc/bash.bashrc</code>文件, 所以字符集设置生效了</li>
+</ol>
+<h1 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h1><p>此方法在<code>Ubuntu16.04+</code>亲测可行, 如不可用, 可发送邮件反馈问题, 谢谢!</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>获取Go可执行文件路径</title>
+    <url>/2019/08/18/%E8%8E%B7%E5%8F%96Go%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E8%B7%AF%E5%BE%84/</url>
+    <content><![CDATA[<blockquote>
+<p>有一个需求, 要求我们在可执行文件的目录下建立配置文件<code>config.json</code>。我们首先应该做的就是获取这个配置文件的路径, 下面代码演示了如何获取它</p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">    <span class="string">"os"</span></span><br><span class="line">    <span class="string">"path/filepath"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">// 获取 可执行文件 的绝对路径</span></span><br><span class="line">    execPath, err := os.Executable()</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        fmt.Printf(<span class="string">"获取可执行文件路径时发生错误: %v\n"</span>, err)</span><br><span class="line">        os.Exit(<span class="number">1</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    fmt.Println(execPath)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取 可执行文件目录 的绝对路径</span></span><br><span class="line">    execFolderPath := filepath.Dir(execPath)</span><br><span class="line">    fmt.Println(execFolderPath)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 拼接得到配置文件的绝对路径</span></span><br><span class="line">    configPath := filepath.Join(execFolderPath, <span class="string">"config.json"</span>)</span><br><span class="line">    fmt.Println(configPath)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>效果:</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ go build .\main.go</span><br><span class="line">$ .\main.exe</span><br><span class="line">C:\Users\markity\Desktop\test\scripts\centos67-shadowsocks\test\main.exe</span><br><span class="line">C:\Users\markity\Desktop\test\scripts\centos67-shadowsocks\test</span><br><span class="line">C:\Users\markity\Desktop\test\scripts\centos67-shadowsocks\test\config.json</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意:</strong></p>
+<ul>
+<li>如果使用<code>go run</code>运行, 打印的路径并不是<code>go</code>文件的路径, 而是一个临时路径, 真正的可执行文件被编译进了里面(windows中是这样, 不确定linux是否也是如此)</li>
+<li>要正确显示可执行文件的路径, 请先<code>go build</code>再运行二进制文件</li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>Go交叉编译</title>
+    <url>/2019/08/18/Go%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</url>
+    <content><![CDATA[<h1 id="什么是交叉编译"><a href="#什么是交叉编译" class="headerlink" title="什么是交叉编译?"></a>什么是交叉编译?</h1><p>交叉编译是在一个平台上生成另一个平台的可执行程序。使用交叉编译则不需要在生产环境中安装<code>Golang</code>, 直接在开发环境中编译二进制文件丢入服务器即可运行</p>
+<h1 id="如何使用交叉编译"><a href="#如何使用交叉编译" class="headerlink" title="如何使用交叉编译?"></a>如何使用交叉编译?</h1><h3 id="Windows开发环境下"><a href="#Windows开发环境下" class="headerlink" title="Windows开发环境下:"></a>Windows开发环境下:</h3><p>打开<code>Windows</code>系统自带的<code>cmd</code>, 注意不能是<code>PowerShell</code>, 因为<code>PowerShell</code>中<code>SET</code>命令不生效</p>
+<p><strong>为Linux编译</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ SET CGO_ENABLED&#x3D;0</span><br><span class="line">$ SET GOOS&#x3D;linux</span><br><span class="line">$ SET GOARCH&#x3D;amd64</span><br><span class="line">$ go build main.go</span><br></pre></td></tr></table></figure>
+
+<p><strong>为Mac编译</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ SET CGO_ENABLED&#x3D;0</span><br><span class="line">$ SET GOOS&#x3D;darwin</span><br><span class="line">$ SET GOARCH&#x3D;amd64</span><br><span class="line">$ go build main.go</span><br></pre></td></tr></table></figure>
+
+<p>注意：<code>SET</code>为当前终端设置环境变量, 仅仅在此终端有效</p>
+<h3 id="Linux开发环境下"><a href="#Linux开发环境下" class="headerlink" title="Linux开发环境下:"></a>Linux开发环境下:</h3><p>打开终端</p>
+<p><strong>为Windows编译</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ CGO_ENABLED&#x3D;0 GOOS&#x3D;windows GOARCH&#x3D;amd64 go build main.go</span><br></pre></td></tr></table></figure>
+
+<p><strong>为Mac编译</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ CGO_ENABLED&#x3D;0 GOOS&#x3D;darwin GOARCH&#x3D;amd64 go build main.go</span><br></pre></td></tr></table></figure>
+
+<h3 id="Mac开发环境下"><a href="#Mac开发环境下" class="headerlink" title="Mac开发环境下:"></a>Mac开发环境下:</h3><p>打开终端</p>
+<p><strong>为Windows编译</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CGO_ENABLED&#x3D;0 GOOS&#x3D;windows GOARCH&#x3D;amd64 go build main.go</span><br></pre></td></tr></table></figure>
+
+<p><strong>为Linux编译</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">CGO_ENABLED&#x3D;0 GOOS&#x3D;linux GOARCH&#x3D;amd64 go build main.go</span><br></pre></td></tr></table></figure>
+
+<h1 id="说明"><a href="#说明" class="headerlink" title="说明:"></a>说明:</h1><ul>
+<li><code>CGO_ENABLED=0</code>：由于交叉编译不支持<code>CGO</code>, 需要关闭</li>
+<li><code>GOOS=XXX</code>：指定目标平台操作系统(windows, linux, darwin)</li>
+<li><code>GOARCH=XXX</code>：指定目标平台的体系架构(amd64, 386, arm)</li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>Go使用os/exec包构建脚本</title>
+    <url>/2019/08/18/Go%E4%BD%BF%E7%94%A8os-exec%E5%8C%85%E6%9E%84%E5%BB%BA%E8%84%9A%E6%9C%AC/</url>
+    <content><![CDATA[<h1 id="为什么用Golang写脚本"><a href="#为什么用Golang写脚本" class="headerlink" title="为什么用Golang写脚本?"></a>为什么用Golang写脚本?</h1><p><code>Go</code>是一门便捷的语言, 相比原生<code>shell</code>脚本有更强的可读性, 更易于软件的构建与维护。<code>Go</code>是一门强大的语言, 拥有较为庞大的生态系统, 使用<code>Go</code>, 你将可以快速有效地构建脚本。<code>Go</code>是编译性语言, 支持交叉编译, 可在不同环境中直接运行编译后的二进制文件</p>
+<h1 id="如何使用Golang写脚本"><a href="#如何使用Golang写脚本" class="headerlink" title="如何使用Golang写脚本?"></a>如何使用Golang写脚本?</h1><h3 id="引入包"><a href="#引入包" class="headerlink" title="引入包"></a>引入包</h3><p>要使用<code>Go</code>写脚本, 需要引入<code>os/exec</code>包, 它封装了一系列关于命令行调用的函数</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">"os/exec"</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="执行shell命令"><a href="#执行shell命令" class="headerlink" title="执行shell命令"></a>执行shell命令</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"os"</span></span><br><span class="line">    <span class="string">"os/exec"</span></span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">// 声明命令, 相当于: echo "Hello World!"</span></span><br><span class="line">    cmd := exec.Command(<span class="string">"echo"</span>, <span class="string">"Hello World!"</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 指定命令的标准输出和标准错误</span></span><br><span class="line">    <span class="comment">// 你也可以自己创建bytes.Buffer, 将输入写入变量</span></span><br><span class="line">    cmd.Stdout = os.Stdout</span><br><span class="line">    cmd.Stderr = os.Stderr</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 执行命令</span></span><br><span class="line">    err := cmd.Run()</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        fmt.Printf(<span class="string">"执行命令错误: %v\n"</span>, err)</span><br><span class="line">        os.Exit(<span class="number">1</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fmt.Printf(<span class="string">"命令执行完毕, 命令的退出状态码为: %v\n"</span>, cmd.ProcessState.ExitCode())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong></p>
+<ul>
+<li><code>exec.Command</code>的声明规则: 第一个参数必须为”命令名”, 例如<code>ls</code>, <code>echo</code>之类的。后面的参数比较随意, 比如<code>exec.Command(&quot;tar&quot;, &quot;-zxf&quot;, &quot;./file.tar.gz&quot;)</code>与<code>exec.Command(&quot;tar&quot;, &quot;-zxf ./file.tar.gz&quot;)</code>是一样的</li>
+<li><code>cmd.Run()</code>是一个阻塞操作, 会等待命令执行完毕后再执行后面的语句。相对的<code>cmd.Start()</code>是一个非阻塞操作, 如果需要可以自己查询相关文档</li>
+<li><code>cmd.Run()</code>的返回值会写明错误的原因, 而命令的状态码不为0也是一种错误</li>
+</ul>
+<h3 id="检查命令是否可用"><a href="#检查命令是否可用" class="headerlink" title="检查命令是否可用"></a>检查命令是否可用</h3><p>很多时候, 在执行命令前我们需要确保这个命令存在, 我们可以使用<code>exec.LookPath</code>检查命令是否存在, 直接上代码</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"os/exec"</span></span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    _, err := exec.LookPath(<span class="string">"ls"</span>)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        fmt.Printf(<span class="string">"ls命令不存在\n"</span>)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        fmt.Printf(<span class="string">"ls命令存在\n"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong></p>
+<ul>
+<li><code>exec.LookPath()</code>返回两个参数, 第一个是命令的路径, 我们不需要所以省略了</li>
+<li>第二个参数是<code>error</code>类型, 如果命令存在则为nil, 不存在则不为nil</li>
+</ul>
+<hr>
+<h1 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h1><p>本文只是列举了<code>os/exec</code>的一部分常用用法, 还有很多关于此包的内容未涉及, 如有需要请自行查询相关文档</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>Linux安装Golang</title>
+    <url>/2019/08/17/Linux%E5%AE%89%E8%A3%85Golang/</url>
+    <content><![CDATA[<h2 id="第一步-下载已编译压缩包-go1-12-9-linux-amd64-tar-gz"><a href="#第一步-下载已编译压缩包-go1-12-9-linux-amd64-tar-gz" class="headerlink" title="第一步: 下载已编译压缩包( go1.12.9.linux-amd64.tar.gz )"></a>第一步: 下载已编译压缩包( <em>go1.12.9.linux-amd64.tar.gz</em> )</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ wget https:&#x2F;&#x2F;studygolang.com&#x2F;dl&#x2F;golang&#x2F;go1.12.9.linux-amd64.tar.gz</span><br><span class="line">...省略下载信息...</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如提示<code>bash: wget: command not found</code>, 请先安装<code>wget</code></p>
+</blockquote>
+<h2 id="第二步-解压并删除压缩包"><a href="#第二步-解压并删除压缩包" class="headerlink" title="第二步: 解压并删除压缩包"></a>第二步: 解压并删除压缩包</h2><p>解压压缩包至<code>/usr/local/</code>目录</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ tar -xzf .&#x2F;go1.12.9.linux-amd64.tar.gz -C &#x2F;usr&#x2F;local&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>解压后可以看见目录下多出<code>go</code>目录</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ ls &#x2F;usr&#x2F;local&#x2F;</span><br><span class="line">bin  etc  games  go  include  lib  lib64  libexec  sbin  share  src</span><br></pre></td></tr></table></figure>
+
+<p>删除不再使用的压缩包</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ rm -f .&#x2F;go1.12.9.linux-amd64.tar.gz</span><br></pre></td></tr></table></figure>
+
+<h2 id="第三步-配置环境变量"><a href="#第三步-配置环境变量" class="headerlink" title="第三步: 配置环境变量"></a>第三步: 配置环境变量</h2><p>Ubuntu:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ echo &#39;export GOROOT&#x3D;&#x2F;usr&#x2F;local&#x2F;go&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br><span class="line">$ echo &#39;export GOBIN&#x3D;$GOROOT&#x2F;bin&#39; &gt;&gt;  &#x2F;etc&#x2F;bash.bashrc</span><br><span class="line">$ echo &#39;export PATH&#x3D;$PATH:$GOBIN&#39; &gt;&gt;  &#x2F;etc&#x2F;bash.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>Centos:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ echo &#39;export GOROOT&#x3D;&#x2F;usr&#x2F;local&#x2F;go&#39; &gt;&gt; &#x2F;etc&#x2F;bashrc</span><br><span class="line">$ echo &#39;export GOBIN&#x3D;$GOROOT&#x2F;bin&#39; &gt;&gt;  &#x2F;etc&#x2F;bashrc</span><br><span class="line">$ echo &#39;export PATH&#x3D;$PATH:$GOBIN&#39; &gt;&gt;  &#x2F;etc&#x2F;bashrc</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>/etc/bashrc</code>或<code>/etc/bash.bashrc</code>文件说明: 打开终端时, 会自动激活( <em>source</em> )此文件</p>
+</blockquote>
+<h2 id="第四步-重启终端并检查Golang环境"><a href="#第四步-重启终端并检查Golang环境" class="headerlink" title="第四步: 重启终端并检查Golang环境"></a>第四步: 重启终端并检查Golang环境</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ bash</span><br><span class="line">$ go version</span><br><span class="line">go version go1.12.9 linux&#x2F;amd64</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>此方法经<code>centos6+</code>和<code>ubuntu16.04+</code>亲测可行, 如配置出错, 可发送邮件反馈问题, 谢谢!</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>Go Module基本使用</title>
+    <url>/2019/08/17/Go-Module%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/</url>
+    <content><![CDATA[<h1 id="什么是Go-Module"><a href="#什么是Go-Module" class="headerlink" title="什么是Go Module?"></a>什么是Go Module?</h1><p><code>Go Module</code>是<code>Go</code>语言官方开发的模块管理机制。它简洁易用且易于部署, 摆脱了对<code>GOPATH</code>的依赖, 未来将是<code>Go</code>语言主流的模块管理系统</p>
+<blockquote>
+<p>注意: <code>Go Module</code>发布于<code>Go 1.11</code>, 如果Go版本低于1.11将无法使用</p>
+</blockquote>
+<h1 id="如何使用"><a href="#如何使用" class="headerlink" title="如何使用"></a>如何使用</h1><h3 id="第一步-在GOPATH-src目录以外建立项目目录-并初始化模块"><a href="#第一步-在GOPATH-src目录以外建立项目目录-并初始化模块" class="headerlink" title="第一步: 在GOPATH/src目录以外建立项目目录, 并初始化模块"></a>第一步: 在GOPATH/src目录以外建立项目目录, 并初始化模块</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ mkdir hello</span><br><span class="line">$ cd .&#x2F;hello&#x2F;</span><br><span class="line">[hello] $ go mod init hello</span><br><span class="line">go: creating new go.mod: module hello</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>初始化模块命令: go mod init 模块名<br>模块名有何作用: 用于标识当前模块路径, 以引入当前模块中的自定义包</p>
+</blockquote>
+<p><strong>为什么在<code>GOPATH/src</code>以外建立项目?</strong></p>
+<p>由于基于<code>GOPATH</code>的包管理仍然盛行, 如果要使用<code>Go Module</code>, 必须在<code>GOPATH/src</code>以外建立目录, 这样可以避免很多坑</p>
+<p><strong>初始化模块之后有何变化?</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">[hello] $ ls</span><br><span class="line">go.mod</span><br><span class="line">[hello] $ cat .&#x2F;go.mod</span><br><span class="line">module hello</span><br><span class="line"></span><br><span class="line">go 1.12</span><br></pre></td></tr></table></figure>
+
+<p>由此看来初始化模块操作只是创建了一个新文件<code>go.mod</code>来记录模块名以及<code>Go</code>版本</p>
+<h3 id="第二步-编写项目"><a href="#第二步-编写项目" class="headerlink" title="第二步: 编写项目"></a>第二步: 编写项目</h3><p><em>项目结构</em></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">|-- route</span><br><span class="line">|   &#96;-- index.go</span><br><span class="line">|</span><br><span class="line">|-- exec</span><br><span class="line">|   &#96;-- main.go</span><br><span class="line">|</span><br><span class="line">|-- go.mod</span><br></pre></td></tr></table></figure>
+
+<p><em>index.go</em></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> route</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"net/http"</span></span><br><span class="line"></span><br><span class="line">    <span class="string">"github.com/gin-gonic/gin"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IndexGet</span><span class="params">(c *gin.Context)</span></span> &#123;</span><br><span class="line">    c.JSON(http.StatusOK, gin.H&#123;</span><br><span class="line">        <span class="string">"message"</span>: <span class="string">"Hello Module"</span>,</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>main.go</em></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="comment">// 引入github上的包</span></span><br><span class="line">    <span class="string">"github.com/gin-gonic/gin"</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 引入模块下的自定义包格式: 模块名/包路径</span></span><br><span class="line">    <span class="comment">// 注意go module引入包不允许使用相对路径!!!</span></span><br><span class="line">    <span class="string">"hello/route"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    app := gin.Default()</span><br><span class="line"></span><br><span class="line">    app.GET(<span class="string">"/"</span>, route.IndexGet)</span><br><span class="line"></span><br><span class="line">    app.Run(<span class="string">"127.0.0.1:80"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第三步-运行项目"><a href="#第三步-运行项目" class="headerlink" title="第三步: 运行项目"></a>第三步: 运行项目</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">[hello] $ cd .&#x2F;exec&#x2F;</span><br><span class="line">[hello&#x2F;exec] $ go run .&#x2F;main.go</span><br><span class="line">go: finding github.com&#x2F;gin-gonic&#x2F;gin v1.4.0</span><br><span class="line">go: finding gopkg.in&#x2F;yaml.v2 v2.2.2</span><br><span class="line">go: finding github.com&#x2F;mattn&#x2F;go-isatty v0.0.7</span><br><span class="line">...更多依赖信息...</span><br><span class="line">[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.</span><br><span class="line"></span><br><span class="line">[GIN-debug] [WARNING] Running in &quot;debug&quot; mode. Switch to &quot;release&quot; mode in production.</span><br><span class="line"> - using env:   export GIN_MODE&#x3D;release</span><br><span class="line"> - using code:  gin.SetMode(gin.ReleaseMode)</span><br><span class="line"></span><br><span class="line">[GIN-debug] GET    &#x2F;                         --&gt; hello&#x2F;route.IndexGet (3 handlers)</span><br><span class="line">[GIN-debug] Listening and serving HTTP on 127.0.0.1:80</span><br></pre></td></tr></table></figure>
+
+<p><strong>发生了什么?</strong></p>
+<p>go run命令自动在网络搜索依赖项, 并成功运行main.go</p>
+<p><strong>模块发生了什么变化?</strong></p>
+<p>使用<code>go run ./main.go</code>运行项目之后, 模块下的<code>go.mod</code>文件发生了变化, 并且新增了一个文件<code>go.sum</code></p>
+<p><em>go.mod</em></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">module hello</span><br><span class="line"></span><br><span class="line">go 1.12</span><br><span class="line"></span><br><span class="line">require github.com&#x2F;gin-gonic&#x2F;gin v1.4.0</span><br></pre></td></tr></table></figure>
+
+<p><em>go.sum</em></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">github.com&#x2F;davecgh&#x2F;go-spew v1.1.0&#x2F;go.mod h1:J7Y8YcW2NihsgmVo&#x2F;mv3lAwl&#x2F;skON4iLHjSsI+c5H38&#x3D;</span><br><span class="line">github.com&#x2F;gin-contrib&#x2F;sse v0.0.0-20190301062529-5545eab6dad3 h1:t8FVkw33L+wilf2QiWkw0UV77qRpcH&#x2F;JHPKGpKa2E8g&#x3D;</span><br><span class="line">github.com&#x2F;gin-contrib&#x2F;sse v0.0.0-20190301062529-5545eab6dad3&#x2F;go.mod h1:VJ0WA2NBN22VlZ2dKZQPAPnyWw5XTlK1KymzLKsr59s&#x3D;</span><br><span class="line">github.com&#x2F;gin-gonic&#x2F;gin v1.4.0 h1:3tMoCCfM7ppqsR0ptz&#x2F;wi1impNpT7&#x2F;9wQtMZ8lr1mCQ&#x3D;</span><br><span class="line">github.com&#x2F;gin-gonic&#x2F;gin v1.4.0&#x2F;go.mod h1:OW2EZn3DO8Ln9oIKOvM++LBO+5UPHJJDH72&#x2F;q&#x2F;3rZdM&#x3D;</span><br><span class="line">github.com&#x2F;golang&#x2F;protobuf v1.3.1 h1:YF8+flBXS5eO826T4nzqPrxfhQThhXl0YzfuUPu4SBg&#x3D;</span><br><span class="line">github.com&#x2F;golang&#x2F;protobuf v1.3.1&#x2F;go.mod h1:6lQm79b+lXiMfvg&#x2F;cZm0SGofjICqVBUtrP5yJMmIC1U&#x3D;</span><br><span class="line">github.com&#x2F;json-iterator&#x2F;go v1.1.6&#x2F;go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU&#x3D;</span><br><span class="line">github.com&#x2F;mattn&#x2F;go-isatty v0.0.7 h1:UvyT9uN+3r7yLEYSlJsbQGdsaB&#x2F;a0DlgWP3pql6iwOc&#x3D;</span><br><span class="line">github.com&#x2F;mattn&#x2F;go-isatty v0.0.7&#x2F;go.mod h1:Iq45c&#x2F;XA43vh69&#x2F;j3iqttzPXn0bhXyGjM0Hdxcsrc5s&#x3D;</span><br><span class="line">github.com&#x2F;modern-go&#x2F;concurrent v0.0.0-20180306012644-bacd9c7ef1dd&#x2F;go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q&#x3D;</span><br><span class="line">github.com&#x2F;modern-go&#x2F;reflect2 v1.0.1&#x2F;go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0&#x3D;</span><br><span class="line">github.com&#x2F;pmezard&#x2F;go-difflib v1.0.0&#x2F;go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ&#x2F;4&#x3D;</span><br><span class="line">github.com&#x2F;stretchr&#x2F;objx v0.1.0&#x2F;go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME&#x3D;</span><br><span class="line">github.com&#x2F;stretchr&#x2F;testify v1.3.0&#x2F;go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI&#x3D;</span><br><span class="line">github.com&#x2F;ugorji&#x2F;go v1.1.4 h1:j4s+tAvLfL3bZyefP2SEWmhBzmuIlH&#x2F;eqNuPdFPgngw&#x3D;</span><br><span class="line">github.com&#x2F;ugorji&#x2F;go v1.1.4&#x2F;go.mod h1:uQMGLiO92mf5W77hV&#x2F;PUCpI3pbzQx3CRekS0kk+RGrc&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;crypto v0.0.0-20190308221718-c2843e01d9a2&#x2F;go.mod h1:djNgcEr1&#x2F;C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;net v0.0.0-20190503192946-f4e77d36d62c&#x2F;go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;sys v0.0.0-20190215142949-d0b11bdaac8a&#x2F;go.mod h1:STP8DvDyc&#x2F;dI5b8T5hshtkjS+E42TnysNCUPdjciGhY&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;sys v0.0.0-20190222072716-a9d3bda3a223&#x2F;go.mod h1:STP8DvDyc&#x2F;dI5b8T5hshtkjS+E42TnysNCUPdjciGhY&#x3D;</span><br><span class="line">golang.org&#x2F;x&#x2F;text v0.3.0&#x2F;go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi&#x2F;IjpwHt7yyuwOQ&#x3D;</span><br><span class="line">gopkg.in&#x2F;check.v1 v0.0.0-20161208181325-20d25e280405&#x2F;go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof&#x2F;cbN4VW5Yz0&#x3D;</span><br><span class="line">gopkg.in&#x2F;go-playground&#x2F;assert.v1 v1.2.1&#x2F;go.mod h1:9RXL0bg&#x2F;zibRAgZUYszZSwO&#x2F;z8Y&#x2F;a8bDuhia5mkpMnE&#x3D;</span><br><span class="line">gopkg.in&#x2F;go-playground&#x2F;validator.v8 v8.18.2 h1:lFB4DoMU6B626w8ny76MV7VX6W2VHct2GVOI3xgiMrQ&#x3D;</span><br><span class="line">gopkg.in&#x2F;go-playground&#x2F;validator.v8 v8.18.2&#x2F;go.mod h1:RX2a&#x2F;7Ha8BgOhfk7j780h4&#x2F;u&#x2F;RRjR0eouCJSH80&#x2F;M2Y&#x3D;</span><br><span class="line">gopkg.in&#x2F;yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw&#x3D;</span><br><span class="line">gopkg.in&#x2F;yaml.v2 v2.2.2&#x2F;go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI&#x3D;</span><br></pre></td></tr></table></figure>
+
+<p>此时, 再次执行命令<code>go run ./main.go</code>, 不再出现搜寻依赖信息, 程序直接跑了起来</p>
+<p><strong>结论</strong><br>由此可见, 当编译或运行<code>Go Module</code>目录下的文件, <code>Go</code>命令识别到此项目使用<code>Go Module</code>, 便不再从<code>GOPATH/src</code>寻找依赖。<code>Go</code>工具将自动搜寻并下载依赖(保存在<code>GOPATH/pkg/mod</code>中), 并将项目依赖及其具体版本信息记录在<code>go.mod</code>和<code>go.sum</code>中</p>
+<p>这些文件通常不需要程序员自己编写, 交给<code>Go</code>命令管理即可</p>
+<h3 id="常用的模块管理命令"><a href="#常用的模块管理命令" class="headerlink" title="常用的模块管理命令"></a>常用的模块管理命令</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>用法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>init</td>
+<td>go mod init 模块名</td>
+<td>在当前目录初始化模块</td>
+</tr>
+<tr>
+<td>graph</td>
+<td>go mod graph</td>
+<td>打印当前模块依赖信息</td>
+</tr>
+<tr>
+<td>tidy</td>
+<td>go mod tidy</td>
+<td>拉取缺少的模块,移除不用的模块, 依赖信息将记录在<code>go.mod</code>和<code>go.sum</code>文件中</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>这里只是列举了几个本人感觉用得上的命令,并不齐全,更多命令请参见官方文档</p>
+</blockquote>
+<hr>
+<h1 id="补充阅读-使用GOPROXY代理Go-Module的依赖拉取"><a href="#补充阅读-使用GOPROXY代理Go-Module的依赖拉取" class="headerlink" title="补充阅读: 使用GOPROXY代理Go Module的依赖拉取"></a>补充阅读: 使用GOPROXY代理Go Module的依赖拉取</h1><p>很多时候由于网络和地域问题, 有的包被墙无法下载(如在中国无法下载<code>golang.org/x</code>包), 设置网络代理才能正常拉取</p>
+<p>幸运的是, <code>GO Module</code>提供了便捷的代理设置, 简单配置环境变量即可使用<br>目前全球有许多免费的Go模块代理如<code>https://goproxy.io</code></p>
+<p>Ubuntu:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ echo &#39;export GOPROXY&#x3D;https:&#x2F;&#x2F;goproxy.io&#39; &gt;&gt; &#x2F;etc&#x2F;bash.bashrc</span><br></pre></td></tr></table></figure>
+
+<p>Centos:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ echo &#39;export GOPROXY&#x3D;https:&#x2F;&#x2F;goproxy.io&#39; &gt;&gt; &#x2F;etc&#x2F;bashrc</span><br></pre></td></tr></table></figure>
+
+<p>Windows:<br>右键计算机/此电脑 -&gt; 属性 -&gt; 高级系统设置 -&gt; 环境变量 -&gt; xxx的用户变量下的新建</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">变量名:GOPROXY</span><br><span class="line">变量值:https:&#x2F;&#x2F;goproxy.io</span><br></pre></td></tr></table></figure>
+
+<p>重启终端即生效, 这样配置过后, <code>Go module</code>拉取依赖将自动走<code>GOPROXY</code>代理</p>
+]]></content>
+  </entry>
+</search>
