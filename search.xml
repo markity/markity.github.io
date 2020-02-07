@@ -1,6 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Let&#39;s Encrypt证书免费生成</title>
+    <url>/2020/02/06/Let-s-Encrypt%E8%AF%81%E4%B9%A6%E5%85%8D%E8%B4%B9%E7%94%9F%E6%88%90/</url>
+    <content><![CDATA[<h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p>准备一台服务器(国内需备案), 一个域名, 将该域名以<code>记录类型A</code>解析此服务器IP</p>
+<h1 id="生成证书"><a href="#生成证书" class="headerlink" title="生成证书"></a>生成证书</h1><p><strong>登录服务器, 下载证书签发工具<code>certbot-auto</code></strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 下载工具</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> wget https://dl.eff.org/certbot-auto</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 将此文件标记为可执行文件</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> chmod a+x certbot-auto</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>签发证书</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> --standalone 代表使用certbot工具自带的服务器进行验证挑战, 确保腾出了80端口, 否则无法签发成功</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --email      请填写自己的email地址, 会有验证邮件发来</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --agree-tos  代表同意服务条款</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d           后面写证书对应的域名</span></span><br><span class="line">./certbot-auto certonly --standalone --email xxx@xxx.com --agree-tos -d xxx.com -d www.xxx.com</span><br></pre></td></tr></table></figure>
+
+<p><strong>查看证书</strong></p>
+<p>证书在<code>/etc/letsencrypt/live/xxx.com</code>, 其中包含了四个文件</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">cert.pem        # 服务端证书</span><br><span class="line">chain.pem       # 浏览器需要的所有证书但不包括服务端证书，比如根证书和中间证书</span><br><span class="line">fullchain.pem   # 包括了cert.pem和chain.pem的内容</span><br><span class="line">privkey.pem     # 私钥</span><br></pre></td></tr></table></figure>
+
+<p>只需关注<code>fullchain.pem</code>和<code>privkey.pem</code>即可</p>
+<p><strong>为<code>nginx</code>安装证书</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    listen  443 ssl;</span><br><span class="line">    server_name xxx.com;</span><br><span class="line">    location &#x2F; &#123;</span><br><span class="line">        # ....</span><br><span class="line">    &#125;</span><br><span class="line">    ssl_certificate &#x2F;etc&#x2F;letsencrypt&#x2F;live&#x2F;xxx.com&#x2F;fullchain.pem;</span><br><span class="line">    ssl_certificate_key &#x2F;etc&#x2F;letsencrypt&#x2F;live&#x2F;xxx.com&#x2F;privkey.pem;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">server &#123;</span><br><span class="line">    listen  80;</span><br><span class="line">    server_name xxx.com;</span><br><span class="line">     location &#x2F; &#123;</span><br><span class="line">                # ...</span><br><span class="line">        &#125;</span><br><span class="line">      # 强制将http重定向到https</span><br><span class="line">      if ($host &#x3D; xxx.com) &#123;</span><br><span class="line">          return 301 https:&#x2F;&#x2F;$host$request_uri;</span><br><span class="line">      &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>重新签发证书</strong></p>
+<p>此证书有效期仅为90天, 需要使用以下命令重新签发</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">./certbot-auto renew --force-renew</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意: 不要隔三岔五就更新一次, 最好等到证书快过期的时候(10~20多天)再更新, 否则可能提示证书不需要更新</p>
+</blockquote>
+<h1 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h1><p><strong>卡在<code>Installing Python packages...</code></strong></p>
+<p>这是由于没有安装<code>pip</code>或者没有<code>pip</code>镜像源太慢, 下面是解决方案</p>
+<ul>
+<li>安装<code>python-pip</code></li>
+<li>更换<code>pip</code>镜像源</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> ubuntu环境, 其他环境自行搜索解决方案</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装pip</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> apt install python-pip</span></span><br><span class="line">省略安装信息...</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 为pip换清华镜像</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mkdir ~/.pip</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> vim ~/.pip</span></span><br><span class="line">[global]</span><br><span class="line">index-url=https://pypi.tuna.tsinghua.edu.cn/simple/</span><br><span class="line"></span><br><span class="line">[install]</span><br><span class="line">trusted-host=pypi.tuna.tsinghua.edu.cn</span><br></pre></td></tr></table></figure>]]></content>
+  </entry>
+  <entry>
     <title>Go http.Request中Form与PostForm的区别</title>
     <url>/2020/02/06/Go-http-Request%E4%B8%ADForm%E4%B8%8EPostForm%E7%9A%84%E5%8C%BA%E5%88%AB/</url>
     <content><![CDATA[<ul>
