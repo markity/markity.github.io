@@ -79,15 +79,15 @@
 
 
 
-<meta name="description" content="准备工作准备一台服务器(国内需备案), 一个域名, 将该域名以记录类型A解析此服务器IP 生成证书登录服务器, 下载证书签发工具certbot-auto 12345# 下载工具$ wget https:&#x2F;&#x2F;dl.eff.org&#x2F;certbot-auto# 将此文件标记为可执行文件$ chmod a+x certbot-auto  签发证书 12345# --standalone 代表使用certb">
+<meta name="description" content="准备工作准备一台服务器(国内需备案), 一个域名, 将该域名以记录类型A解析此服务器IP 生成证书登录服务器, 下载证书签发工具certbot-auto 12345# 下载工具$ wget https:&#x2F;&#x2F;dl.eff.org&#x2F;certbot-auto# 将此文件标记为可执行文件$ chmod a+x certbot-auto  签发证书 12345$ .&#x2F;certbot-auto certonl">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Let&#39;s Encrypt证书免费生成">
 <meta property="og:url" content="https://blog.markity.cn/2020/02/06/Let-s-Encrypt%E8%AF%81%E4%B9%A6%E5%85%8D%E8%B4%B9%E7%94%9F%E6%88%90/index.html">
 <meta property="og:site_name" content="Markity&#39;s notes">
-<meta property="og:description" content="准备工作准备一台服务器(国内需备案), 一个域名, 将该域名以记录类型A解析此服务器IP 生成证书登录服务器, 下载证书签发工具certbot-auto 12345# 下载工具$ wget https:&#x2F;&#x2F;dl.eff.org&#x2F;certbot-auto# 将此文件标记为可执行文件$ chmod a+x certbot-auto  签发证书 12345# --standalone 代表使用certb">
+<meta property="og:description" content="准备工作准备一台服务器(国内需备案), 一个域名, 将该域名以记录类型A解析此服务器IP 生成证书登录服务器, 下载证书签发工具certbot-auto 12345# 下载工具$ wget https:&#x2F;&#x2F;dl.eff.org&#x2F;certbot-auto# 将此文件标记为可执行文件$ chmod a+x certbot-auto  签发证书 12345$ .&#x2F;certbot-auto certonl">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-02-06T11:25:47.000Z">
-<meta property="article:modified_time" content="2020-02-07T06:17:15.203Z">
+<meta property="article:modified_time" content="2020-02-07T06:24:55.143Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="markity">
 <meta property="article:tag" content="markity blog">
@@ -358,7 +358,7 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 下载工具</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> wget https://dl.eff.org/certbot-auto</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 将此文件标记为可执行文件</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> chmod a+x certbot-auto</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>签发证书</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> --standalone 代表使用certbot工具自带的服务器进行验证挑战, 确保腾出了80端口, 否则无法签发成功</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --email      请填写自己的email地址, 会有验证邮件发来</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --agree-tos  代表同意服务条款</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d           后面写证书对应的域名</span></span><br><span class="line">./certbot-auto certonly --standalone --email xxx@xxx.com --agree-tos -d xxx.com -d www.xxx.com</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ./certbot-auto certonly --standalone --email xxx@xxx.com --agree-tos -d xxx.com -d www.xxx.com</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --standalone 代表使用certbot工具自带的服务器进行验证挑战, 确保腾出了80端口, 否则无法签发成功</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --email      请填写自己的email地址, 会有验证邮件发来</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --agree-tos  代表同意服务条款</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d           后面写证书对应的域名</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>查看证书</strong></p>
 <p>证书在<code>/etc/letsencrypt/live/xxx.com</code>, 其中包含了四个文件</p>
@@ -370,7 +370,7 @@
 
 <p><strong>重新签发证书</strong></p>
 <p>此证书有效期仅为90天, 需要使用以下命令重新签发</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./certbot-auto renew --force-renew</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ./certbot-auto renew --force-renew</span></span><br></pre></td></tr></table></figure>
 
 <blockquote>
 <p>注意: 不要隔三岔五就更新一次, 最好等到证书快过期的时候(10~20多天)再更新, 否则可能提示证书不需要更新</p>

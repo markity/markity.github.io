@@ -8,7 +8,7 @@
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 下载工具</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> wget https://dl.eff.org/certbot-auto</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 将此文件标记为可执行文件</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> chmod a+x certbot-auto</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>签发证书</strong></p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> --standalone 代表使用certbot工具自带的服务器进行验证挑战, 确保腾出了80端口, 否则无法签发成功</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --email      请填写自己的email地址, 会有验证邮件发来</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --agree-tos  代表同意服务条款</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d           后面写证书对应的域名</span></span><br><span class="line">./certbot-auto certonly --standalone --email xxx@xxx.com --agree-tos -d xxx.com -d www.xxx.com</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ./certbot-auto certonly --standalone --email xxx@xxx.com --agree-tos -d xxx.com -d www.xxx.com</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --standalone 代表使用certbot工具自带的服务器进行验证挑战, 确保腾出了80端口, 否则无法签发成功</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --email      请填写自己的email地址, 会有验证邮件发来</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> --agree-tos  代表同意服务条款</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -d           后面写证书对应的域名</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>查看证书</strong></p>
 <p>证书在<code>/etc/letsencrypt/live/xxx.com</code>, 其中包含了四个文件</p>
@@ -20,7 +20,7 @@
 
 <p><strong>重新签发证书</strong></p>
 <p>此证书有效期仅为90天, 需要使用以下命令重新签发</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">./certbot-auto renew --force-renew</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ./certbot-auto renew --force-renew</span></span><br></pre></td></tr></table></figure>
 
 <blockquote>
 <p>注意: 不要隔三岔五就更新一次, 最好等到证书快过期的时候(10~20多天)再更新, 否则可能提示证书不需要更新</p>
