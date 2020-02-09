@@ -2,7 +2,7 @@
 <search>
   <entry>
     <title>Go文件读写详解</title>
-    <url>/2020/02/09/Go%E6%96%87%E4%BB%B6%E8%AF%BB%E5%86%99%E8%AF%A6%E8%A7%A3/</url>
+    <url>/posts/54506/</url>
     <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p><code>Golang</code>读写文件相当便利, 只需关注<code>os.OpenFile</code>函数即可</p>
 <h1 id="函数说明"><a href="#函数说明" class="headerlink" title="函数说明"></a>函数说明</h1><h3 id="函数原型"><a href="#函数原型" class="headerlink" title="函数原型"></a>函数原型</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line">os.OpenFile(name <span class="keyword">string</span>, flag <span class="keyword">int</span>, perm FileMode) (*os.File, error)</span><br></pre></td></tr></table></figure>
 
@@ -44,7 +44,7 @@
   </entry>
   <entry>
     <title>Let&#39;s Encrypt证书免费生成</title>
-    <url>/2020/02/06/Let-s-Encrypt%E8%AF%81%E4%B9%A6%E5%85%8D%E8%B4%B9%E7%94%9F%E6%88%90/</url>
+    <url>/posts/44763/</url>
     <content><![CDATA[<h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p>准备一台服务器(国内需备案), 一个域名, 将该域名以<code>记录类型A</code>解析此服务器IP</p>
 <h1 id="生成证书"><a href="#生成证书" class="headerlink" title="生成证书"></a>生成证书</h1><p><strong>登录服务器, 下载证书签发工具<code>certbot-auto</code></strong></p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 下载工具</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> wget https://dl.eff.org/certbot-auto</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 将此文件标记为可执行文件</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> chmod a+x certbot-auto</span></span><br></pre></td></tr></table></figure>
@@ -77,7 +77,7 @@
   </entry>
   <entry>
     <title>Go http.Request中Form与PostForm的区别</title>
-    <url>/2020/02/06/Go-http-Request%E4%B8%ADForm%E4%B8%8EPostForm%E7%9A%84%E5%8C%BA%E5%88%AB/</url>
+    <url>/posts/5895/</url>
     <content><![CDATA[<ul>
 <li><code>Form</code>合并了<code>Query</code>和请求体表单的数据, 使用它可以同时获取两者数据</li>
 <li><code>PostForm</code>仅仅包含请求体的表单数据</li>
@@ -94,7 +94,7 @@
   </entry>
   <entry>
     <title>Go中RSA加密解密以及签名验签</title>
-    <url>/2020/01/31/Go%E4%B8%ADRSA%E5%8A%A0%E5%AF%86%E8%A7%A3%E5%AF%86%E4%BB%A5%E5%8F%8A%E7%AD%BE%E5%90%8D%E9%AA%8C%E7%AD%BE/</url>
+    <url>/posts/61010/</url>
     <content><![CDATA[<h1 id="概念介绍"><a href="#概念介绍" class="headerlink" title="概念介绍"></a>概念介绍</h1><p>RSA是一种非对称加密算法, 密钥分为公钥和私钥, 公钥用于<code>加密</code>, 私钥用于<code>解密</code>. 拥有私钥的一方可以对明文数据进行<code>签名</code>, 拥有公钥的一方若同时拥有明文数据与签名, 则可以对签名进行<code>验签</code>, 检验此数据是否由来自拥有私钥的一方, 这样可以达到身份校验以及验证数据完整性这样的功能. 支付宝API的签名校验就使用了<code>RSA</code>签名算法</p>
 <h1 id="数学算法"><a href="#数学算法" class="headerlink" title="数学算法"></a>数学算法</h1><p>其数学原理参考<a href="https://zhuanlan.zhihu.com/p/44185847" target="_blank" rel="noopener" title="一文搞懂 RSA 算法">这里</a></p>
 <h1 id="生成密钥"><a href="#生成密钥" class="headerlink" title="生成密钥"></a>生成密钥</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> openssl genrsa -out rsa_private_key.pem 2048 <span class="comment">#生成私钥, 长度2048bits</span></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> openssl rsa -<span class="keyword">in</span> rsa_private_key.pem -pubout -out rsa_public_key.pem <span class="comment">#生成公钥</span></span></span><br></pre></td></tr></table></figure>
@@ -121,7 +121,7 @@
   </entry>
   <entry>
     <title>linux常用命令</title>
-    <url>/2020/01/20/linux%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</url>
+    <url>/posts/30335/</url>
     <content><![CDATA[<h1 id="压缩-解压缩命令-tar"><a href="#压缩-解压缩命令-tar" class="headerlink" title="压缩/解压缩命令( tar )"></a>压缩/解压缩命令( tar )</h1><p><strong>将文件或文件夹压缩为tar.gz文件格式</strong></p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash"> tar -czvf 目标压缩文件.tar.gz 文件或文件夹路径1 文件或文件夹路径2 ...</span></span><br></pre></td></tr></table></figure>
 
@@ -199,14 +199,14 @@
   </entry>
   <entry>
     <title>Golang gtk3键盘事件监听</title>
-    <url>/2020/01/20/Golang-gtk3%E9%94%AE%E7%9B%98%E4%BA%8B%E4%BB%B6%E7%9B%91%E5%90%AC/</url>
+    <url>/posts/61593/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>源自C语言的gtk是优秀的图形开发框架, 许多语言均有其绑定.</p>
 <p>Golang中<code>github.com/gotk3/gotk3</code>对gtk3的绑定有很好的实现.</p>
 <h2 id="键盘事件监听示例代码"><a href="#键盘事件监听示例代码" class="headerlink" title="键盘事件监听示例代码"></a>键盘事件监听示例代码</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">    <span class="string">"log"</span></span><br><span class="line"></span><br><span class="line">    <span class="string">"github.com/gotk3/gotk3/gdk"</span></span><br><span class="line">    <span class="string">"github.com/gotk3/gotk3/gtk"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">// 初始化GTK, 不使用任何参数</span></span><br><span class="line">    gtk.Init(<span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建一个 toplevel 类型的窗口, 这是gtk中最常用的窗口类型.</span></span><br><span class="line">    win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        log.Fatal(<span class="string">"Unable to create window:"</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 设置窗口标题</span></span><br><span class="line">    win.SetTitle(<span class="string">"Simple Example"</span>)</span><br><span class="line">    <span class="comment">// 点击窗口"关闭"按钮时, 窗口关闭而触发, 调用MainQuit()方法结束程序</span></span><br><span class="line">    win.Connect(<span class="string">"destroy"</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        gtk.MainQuit()</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="comment">// 绑定"按下键盘"事件</span></span><br><span class="line">    win.Connect(<span class="string">"key-press-event"</span>, <span class="function"><span class="keyword">func</span><span class="params">(w *gtk.Window, e *gdk.Event)</span></span> &#123;</span><br><span class="line">        <span class="comment">// 判断是否为指定按键: 左键</span></span><br><span class="line">        ek := gdk.EventKeyNewFromEvent(e)</span><br><span class="line">        <span class="keyword">if</span> ek.KeyVal() == gdk.KEY_Left &#123;</span><br><span class="line">            fmt.Println(<span class="string">"Left"</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 添加一个Lable控件</span></span><br><span class="line">    l, err := gtk.LabelNew(<span class="string">"Hello, gotk3!"</span>)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        log.Fatal(<span class="string">"Unable to create label:"</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">    win.Add(l)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 设置不可调整窗口大小, 并设置窗口大小</span></span><br><span class="line">    win.SetResizable(<span class="literal">false</span>)</span><br><span class="line">    win.SetDefaultSize(<span class="number">800</span>, <span class="number">600</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 展示窗口内所有控件</span></span><br><span class="line">    win.ShowAll()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 开启Main循环</span></span><br><span class="line">    gtk.Main()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
   </entry>
   <entry>
     <title>C语言读取一行任意长度的字符串</title>
-    <url>/2019/10/02/C%E8%AF%AD%E8%A8%80%E8%AF%BB%E5%8F%96%E4%B8%80%E8%A1%8C%E4%BB%BB%E6%84%8F%E9%95%BF%E5%BA%A6%E5%AD%97%E7%AC%A6%E4%B8%B2/</url>
+    <url>/posts/31704/</url>
     <content><![CDATA[<blockquote>
 <p>C语言库实现中有<code>fgets</code>这样的函数读取一行字符串。然而使用这个函数读入的字符数目有限, 不能读取任意字符长度的行字符串。因此我们可以使用<code>getchar</code>逐个读取字符, 当字符数组长度不够时使用<code>malloc</code>动态分配拓展字符数组内存, 达到读取一行任意长度字符串的效果</p>
 </blockquote>
@@ -219,7 +219,7 @@
   </entry>
   <entry>
     <title>Python pip卸载所有第三方包</title>
-    <url>/2019/09/13/pip%E5%8D%B8%E8%BD%BD%E6%89%80%E6%9C%89%E7%AC%AC%E4%B8%89%E6%96%B9%E5%8C%85/</url>
+    <url>/posts/30904/</url>
     <content><![CDATA[<blockquote>
 <p>随着python的使用, 我们会安装越来越多的包, 手动一个一个卸载会耗费大量时间, 下面介绍如何快速卸载已安装的所有第三方包</p>
 </blockquote>
@@ -238,7 +238,7 @@
   </entry>
   <entry>
     <title>Docker Ubuntu解决中文乱码</title>
-    <url>/2019/08/20/Docker-Ubuntu%E8%A7%A3%E5%86%B3%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81/</url>
+    <url>/posts/18257/</url>
     <content><![CDATA[<h1 id="问题引出"><a href="#问题引出" class="headerlink" title="问题引出"></a>问题引出</h1><p><code>Docker</code>中的<code>Ubuntu</code>镜像特别干净, 不但没有<code>vi</code>, <code>wget</code>等基础工具, 甚至连字符集也没几个, 导致无法输入中文</p>
 <p>查看镜像内的字符集, 发现仅仅自带3个, 默认使用的字符集是<code>POSIX</code></p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ locale -a</span><br><span class="line">C</span><br><span class="line">C.UTF-8</span><br><span class="line">POSIX</span><br><span class="line">$ locale</span><br><span class="line">LANG&#x3D;</span><br><span class="line">LANGUAGE&#x3D;</span><br><span class="line">LC_CTYPE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_NUMERIC&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_TIME&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_COLLATE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MONETARY&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MESSAGES&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_PAPER&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_NAME&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_ADDRESS&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_TELEPHONE&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_MEASUREMENT&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_IDENTIFICATION&#x3D;&quot;POSIX&quot;</span><br><span class="line">LC_ALL&#x3D;</span><br></pre></td></tr></table></figure>
@@ -268,7 +268,7 @@
   </entry>
   <entry>
     <title>获取Go可执行文件路径</title>
-    <url>/2019/08/18/%E8%8E%B7%E5%8F%96Go%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E8%B7%AF%E5%BE%84/</url>
+    <url>/posts/30227/</url>
     <content><![CDATA[<blockquote>
 <p>有一个需求, 要求我们在可执行文件的目录下建立配置文件<code>config.json</code>。我们首先应该做的就是获取这个配置文件的路径, 下面代码演示了如何获取它</p>
 </blockquote>
@@ -286,7 +286,7 @@
   </entry>
   <entry>
     <title>Go交叉编译</title>
-    <url>/2019/08/18/Go%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91/</url>
+    <url>/posts/1120/</url>
     <content><![CDATA[<h1 id="什么是交叉编译"><a href="#什么是交叉编译" class="headerlink" title="什么是交叉编译?"></a>什么是交叉编译?</h1><p>交叉编译是在一个平台上生成另一个平台的可执行程序。使用交叉编译则不需要在生产环境中安装<code>Golang</code>, 直接在开发环境中编译二进制文件丢入服务器即可运行</p>
 <h1 id="如何使用交叉编译"><a href="#如何使用交叉编译" class="headerlink" title="如何使用交叉编译?"></a>如何使用交叉编译?</h1><h3 id="Windows开发环境下"><a href="#Windows开发环境下" class="headerlink" title="Windows开发环境下:"></a>Windows开发环境下:</h3><p>打开<code>Windows</code>系统自带的<code>cmd</code>, 注意不能是<code>PowerShell</code>, 因为<code>PowerShell</code>中<code>SET</code>命令不生效</p>
 <p><strong>为Linux编译</strong></p>
@@ -319,7 +319,7 @@
   </entry>
   <entry>
     <title>Go使用os/exec包构建脚本</title>
-    <url>/2019/08/18/Go%E4%BD%BF%E7%94%A8os-exec%E5%8C%85%E6%9E%84%E5%BB%BA%E8%84%9A%E6%9C%AC/</url>
+    <url>/posts/21829/</url>
     <content><![CDATA[<h1 id="为什么用Golang写脚本"><a href="#为什么用Golang写脚本" class="headerlink" title="为什么用Golang写脚本?"></a>为什么用Golang写脚本?</h1><p><code>Go</code>是一门便捷的语言, 相比原生<code>shell</code>脚本有更强的可读性, 更易于软件的构建与维护。<code>Go</code>是一门强大的语言, 拥有较为庞大的生态系统, 使用<code>Go</code>, 你将可以快速有效地构建脚本。<code>Go</code>是编译性语言, 支持交叉编译, 可在不同环境中直接运行编译后的二进制文件</p>
 <h1 id="如何使用Golang写脚本"><a href="#如何使用Golang写脚本" class="headerlink" title="如何使用Golang写脚本?"></a>如何使用Golang写脚本?</h1><h3 id="引入包"><a href="#引入包" class="headerlink" title="引入包"></a>引入包</h3><p>要使用<code>Go</code>写脚本, 需要引入<code>os/exec</code>包, 它封装了一系列关于命令行调用的函数</p>
 <figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">"os/exec"</span></span><br></pre></td></tr></table></figure>
@@ -346,7 +346,7 @@
   </entry>
   <entry>
     <title>Linux安装Golang</title>
-    <url>/2019/08/17/Linux%E5%AE%89%E8%A3%85Golang/</url>
+    <url>/posts/19589/</url>
     <content><![CDATA[<h2 id="第一步-下载已编译压缩包-go1-12-9-linux-amd64-tar-gz"><a href="#第一步-下载已编译压缩包-go1-12-9-linux-amd64-tar-gz" class="headerlink" title="第一步: 下载已编译压缩包( go1.12.9.linux-amd64.tar.gz )"></a>第一步: 下载已编译压缩包( <em>go1.12.9.linux-amd64.tar.gz</em> )</h2><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ wget https:&#x2F;&#x2F;studygolang.com&#x2F;dl&#x2F;golang&#x2F;go1.12.9.linux-amd64.tar.gz</span><br><span class="line">...省略下载信息...</span><br></pre></td></tr></table></figure>
 
 <blockquote>
@@ -378,7 +378,7 @@
   </entry>
   <entry>
     <title>Go Module基本使用</title>
-    <url>/2019/08/17/Go-Module%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/</url>
+    <url>/posts/38888/</url>
     <content><![CDATA[<h1 id="什么是Go-Module"><a href="#什么是Go-Module" class="headerlink" title="什么是Go Module?"></a>什么是Go Module?</h1><p><code>Go Module</code>是<code>Go</code>语言官方开发的模块管理机制。它简洁易用且易于部署, 摆脱了对<code>GOPATH</code>的依赖, 未来将是<code>Go</code>语言主流的模块管理系统</p>
 <blockquote>
 <p>注意: <code>Go Module</code>发布于<code>Go 1.11</code>, 如果Go版本低于1.11将无法使用</p>
