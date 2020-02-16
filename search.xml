@@ -187,7 +187,7 @@
 
 <h1 id="使用公钥以及明文校验签名"><a href="#使用公钥以及明文校验签名" class="headerlink" title="使用公钥以及明文校验签名"></a>使用公钥以及明文校验签名</h1><figure class="highlight go"><table><tr><td class="code"><pre><span class="line">h := crypto.SHA256.New()</span><br><span class="line">h.Write(clearText)</span><br><span class="line">hashed := h.Sum(<span class="literal">nil</span>)</span><br><span class="line"><span class="comment">// 检查err是否为nil, 来判断签名是否由拥有私钥的一方所签</span></span><br><span class="line"><span class="keyword">if</span> err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed, signature); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    fmt.Println(<span class="string">"签名有误, 校验错误"</span>)</span><br><span class="line">&#125;</span><br><span class="line">fmt.Println(<span class="string">"签名正确, 校验成功"</span>)</span><br></pre></td></tr></table></figure>
 
-<h1 id="推荐一下我写的便捷RSA工具"><a href="#推荐一下我写的便捷RSA工具" class="headerlink" title="推荐一下我写的便捷RSA工具"></a>推荐一下我写的便捷RSA工具</h1><p><a href="https://github.com/markity/goutils/blob/master/rsa/rsa.go" target="_blank" rel="noopener" title="传送门">传送门</a></p>
+<h1 id="推荐一下我写的便捷RSA工具"><a href="#推荐一下我写的便捷RSA工具" class="headerlink" title="推荐一下我写的便捷RSA工具"></a>推荐一下我写的便捷RSA工具</h1><p><a href="https://github.com/markity/goutils/blob/master/crypto/rsa/rsa.go" target="_blank" rel="noopener" title="传送门">传送门</a></p>
 ]]></content>
   </entry>
   <entry>
