@@ -66,7 +66,10 @@
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    print_pi();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p><em>命令行执行</em></p>
-<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line"><span class="variable">$</span> gcc main.c tool.c <span class="literal">-o</span> main.exe</span><br><span class="line"><span class="variable">$</span> .\main.exe</span><br><span class="line">Hello <span class="number">3.1415926</span></span><br></pre></td></tr></table></figure>]]></content>
+<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line"><span class="variable">$</span> gcc main.c tool.c <span class="literal">-o</span> main.exe</span><br><span class="line"><span class="variable">$</span> .\main.exe</span><br><span class="line">Hello <span class="number">3.1415926</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="补充阅读：命名冲突问题"><a href="#补充阅读：命名冲突问题" class="headerlink" title="补充阅读：命名冲突问题"></a>补充阅读：命名冲突问题</h1><p>C语言没有C++命名空间的概念，对于重名的函数或者全局变量我们无可奈何，只能避免与其发生重名冲突。基本方法是使用<code>#define</code>替代自己源文件中的某些可能重名的函数，然后可以使用<code>static</code>关键字隐藏某些不必导出的函数和全局变量，降低发生冲突的可能性。</p>
+]]></content>
   </entry>
   <entry>
     <title>Go文件读写详解</title>
