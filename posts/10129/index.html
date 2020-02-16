@@ -79,15 +79,15 @@
 
 
 
-<meta name="description" content="前言Golang读写文件相当便利, 只需关注os.OpenFile函数即可 函数说明函数原型1os.OpenFile(name string, flag int, perm FileMode) (*os.File, error)  参数flag参数flag表明对文件进行的操作, 下面是常用的flag参数 123456O_RDONLY:  只读O_WRONLY:  只写, 此时文件指针在文件开头,">
+<meta name="description" content="前言最近学习C语言，在头文件的使用方面折腾了很久踩了各种坑。今天打算记录一下头文件的正确使用方式，以便以后查阅复习。 头文件的基本用法众所周知，头文件是用来包含函数以及全局变量的声明的，下面是一个最基本的实例。 tool.c 1234567#include &lt;stdio.h&gt;#include &quot;tool.h&quot;void print_pi(void)&amp;#123;    printf(&quot;PI">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Go文件读写详解">
-<meta property="og:url" content="https://blog.markity.cn/posts/54506/index.html">
+<meta property="og:title" content="C语言头文件的正确使用方法">
+<meta property="og:url" content="https://blog.markity.cn/posts/10129/index.html">
 <meta property="og:site_name" content="Markity&#39;s notes">
-<meta property="og:description" content="前言Golang读写文件相当便利, 只需关注os.OpenFile函数即可 函数说明函数原型1os.OpenFile(name string, flag int, perm FileMode) (*os.File, error)  参数flag参数flag表明对文件进行的操作, 下面是常用的flag参数 123456O_RDONLY:  只读O_WRONLY:  只写, 此时文件指针在文件开头,">
+<meta property="og:description" content="前言最近学习C语言，在头文件的使用方面折腾了很久踩了各种坑。今天打算记录一下头文件的正确使用方式，以便以后查阅复习。 头文件的基本用法众所周知，头文件是用来包含函数以及全局变量的声明的，下面是一个最基本的实例。 tool.c 1234567#include &lt;stdio.h&gt;#include &quot;tool.h&quot;void print_pi(void)&amp;#123;    printf(&quot;PI">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-02-09T02:22:23.000Z">
-<meta property="article:modified_time" content="2020-02-09T05:56:44.279Z">
+<meta property="article:published_time" content="2020-02-16T02:39:27.000Z">
+<meta property="article:modified_time" content="2020-02-16T03:20:13.380Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="markity">
 <meta property="article:tag" content="markity blog">
@@ -129,13 +129,13 @@
 
 
 
-  <link rel="canonical" href="https://blog.markity.cn/posts/54506/"/>
+  <link rel="canonical" href="https://blog.markity.cn/posts/10129/"/>
 
 
 
 
 
-  <title>Go文件读写详解 | Markity's notes</title>
+  <title>C语言头文件的正确使用方法 | Markity's notes</title>
   
 
 
@@ -286,7 +286,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/posts/54506/">
+    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/posts/10129/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Markity">
@@ -303,7 +303,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Go文件读写详解</h1>
+          <h1 class="post-title" itemprop="name headline">C语言头文件的正确使用方法</h1>
         
 
         <div class="post-meta">
@@ -315,8 +315,8 @@
               
                 <span class="post-meta-item-text">Posted on</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-02-09T02:22:23+00:00">
-                2020-02-09
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-02-16T02:39:27+00:00">
+                2020-02-16
               </time>
             
 
@@ -353,44 +353,70 @@
       
 
       
-        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p><code>Golang</code>读写文件相当便利, 只需关注<code>os.OpenFile</code>函数即可</p>
-<h1 id="函数说明"><a href="#函数说明" class="headerlink" title="函数说明"></a>函数说明</h1><h3 id="函数原型"><a href="#函数原型" class="headerlink" title="函数原型"></a>函数原型</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">os.OpenFile(name <span class="keyword">string</span>, flag <span class="keyword">int</span>, perm FileMode) (*os.File, error)</span><br></pre></td></tr></table></figure>
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>最近学习C语言，在头文件的使用方面折腾了很久踩了各种坑。今天打算记录一下头文件的正确使用方式，以便以后查阅复习。</p>
+<h1 id="头文件的基本用法"><a href="#头文件的基本用法" class="headerlink" title="头文件的基本用法"></a>头文件的基本用法</h1><p>众所周知，头文件是用来包含函数以及全局变量的声明的，下面是一个最基本的实例。</p>
+<p><em>tool.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"PI is 3.1415926"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h3 id="参数flag"><a href="#参数flag" class="headerlink" title="参数flag"></a>参数<code>flag</code></h3><p>参数<code>flag</code>表明对文件进行的操作, 下面是常用的<code>flag</code>参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">O_RDONLY:  只读</span><br><span class="line">O_WRONLY:  只写, 此时文件指针在文件开头, 若写入文件会导致文件前文被覆盖</span><br><span class="line">O_RDWR: 读写, 此时文件指针在文件开头, 若写入文件会导致文件前文被覆盖</span><br><span class="line">O_APPEND: 追加, 文件指针指向文件末尾, 写入可以实现文件内容的追加</span><br><span class="line">O_CREATE: 若文件存在, 则打开; 不存在，则创建</span><br><span class="line">O_TRUNC: 当文件被成功打开为只写或读写方式, 若文件存在, 文件会先被清空</span><br></pre></td></tr></table></figure>
+<p><em>tool.h</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br></pre></td></tr></table></figure>
 
-<p>打开一个文件可以使用多个<code>flag</code>. 例如下面的代码</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">os.OpenFile(<span class="string">"info.txt"</span>, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, <span class="number">0600</span>)</span><br></pre></td></tr></table></figure>
+<p><em>main.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    print_pi();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h3 id="参数perm"><a href="#参数perm" class="headerlink" title="参数perm"></a>参数<code>perm</code></h3><p>参数<code>perm</code>表示创建文件时设置文件权限, 下面是文件权限说明</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">文件权限格式为0XXX</span><br><span class="line"></span><br><span class="line">0打头代表这是一个八进制数</span><br><span class="line">XXX三位分别代表拥有者位, 同组用户位, 其余用户位的权限设置</span><br><span class="line"></span><br><span class="line">读操作的数字代号是4, 写是2，执行是1, 0代表没有任何权限</span><br><span class="line"></span><br><span class="line">例如0777表示所有用户具有读,写,执行的权限(7&#x3D;4+2+1)</span><br><span class="line">0600代表仅自己拥有读权限和写权限(6&#x3D;4+2)</span><br></pre></td></tr></table></figure>
+<p><em>命令行执行</em></p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> gcc main.c tool.c <span class="literal">-o</span> main.exe</span><br><span class="line"><span class="variable">$</span> .\main.exe</span><br><span class="line">PI is <span class="number">3.1415926</span></span><br></pre></td></tr></table></figure>
 
-<blockquote>
-<p>注意: <code>prem</code>参数仅在创建文件时才有用. 对于已经存在的文件是没有任何作用的, 因此读取一个文件所用的权限代码一般为<code>0</code></p>
-</blockquote>
-<h3 id="返回值-os-File"><a href="#返回值-os-File" class="headerlink" title="返回值*os.File"></a>返回值<code>*os.File</code></h3><p>*os.File实现了<code>Reader</code>, <code>Writer</code>以及<code>Closer</code>, 下面列举它的常用方法</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将文件读入b数组, n表示成功读入的字节数</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *os.File)</span> <span class="title">Read</span><span class="params">(b []<span class="keyword">byte</span>)</span> <span class="params">(n <span class="keyword">int</span>, err error)</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 从off作为起点, 将文件读入b</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *File)</span> <span class="title">ReadAt</span><span class="params">(b []<span class="keyword">byte</span>, off <span class="keyword">int64</span>)</span> <span class="params">(n <span class="keyword">int</span>, err error)</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 将b写入文件</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *File)</span> <span class="title">Write</span><span class="params">(b []<span class="keyword">byte</span>)</span> <span class="params">(n <span class="keyword">int</span>, err error)</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 从off作为起点, 将b写入文件</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *File)</span> <span class="title">WriteAt</span><span class="params">(b []<span class="keyword">byte</span>, off <span class="keyword">int64</span>)</span> <span class="params">(n <span class="keyword">int</span>, err error)</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">将文件指针移动到指定位置</span></span><br><span class="line"><span class="comment">  offset表示偏移量</span></span><br><span class="line"><span class="comment">  whence表示从何处开始偏移, os.SEEK_CUR表示从指针当前位置, os.SEEK_SET表示从文件开头, os.SEEK_END表示从文件末尾</span></span><br><span class="line"><span class="comment">  ret是移动指针后的偏移量</span></span><br><span class="line"><span class="comment">例子:</span></span><br><span class="line"><span class="comment">  file.Seek(32, os.SEEK_SET)表示将文件指针移到文件开头第32字节的后面</span></span><br><span class="line"><span class="comment">  file.Seek(0, os.SEEK_SET)表示将文件指针移到文件开头</span></span><br><span class="line"><span class="comment">  file.Seek(0, os.SEEK_END)表示将文件指针移到文件末尾</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *File)</span> <span class="title">Seek</span><span class="params">(offset <span class="keyword">int64</span>, whence <span class="keyword">int</span>)</span> <span class="params">(ret <span class="keyword">int64</span>, err error)</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 关闭文件</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *File)</span> <span class="title">Close</span><span class="params">()</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
+<h1 id="防止重复包含"><a href="#防止重复包含" class="headerlink" title="防止重复包含"></a>防止重复包含</h1><p><strong>说明</strong></p>
+<p>C依靠<code>#include</code>宏导入头文件从而包含函数定义以及全局变量，其作用相当于将文件拷贝到对应位置。当程序仅有一个源文件时，也许对于同一个头文件只引用一次；但是如果程序有多个源文件，那么无法保证有没有多个文件引用了同一个头文件，对同以头文件多次拷贝，导致代码冗杂。</p>
+<p><strong>问题解决</strong></p>
+<p>显然禁止不同文件引用同一头文件是不切实际的，因此可以在头文件中使用宏来检测是否以及包含了指定头文件，下面是代码实现。</p>
+<p><em>tool.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"PI is 3.1415926"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<blockquote>
-<p>此处仅仅列举几个比较常用的, 更多方法可自行探索</p>
-</blockquote>
-<h3 id="返回值error"><a href="#返回值error" class="headerlink" title="返回值error"></a>返回值<code>error</code></h3><p><code>os</code>封装了常见的错误判断函数</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">os.IsExist(err) <span class="keyword">bool</span></span><br><span class="line">os.IsNotExist(err) <span class="keyword">bool</span></span><br><span class="line">os.IsPermission(err) <span class="keyword">bool</span></span><br></pre></td></tr></table></figure>
+<p><em>tool.h</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> TOOL_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TOOL_H 1</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
 
-<h1 id="读取文件"><a href="#读取文件" class="headerlink" title="读取文件"></a>读取文件</h1><p><em>待读文件(data.txt)</em></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Hello World</span><br><span class="line">我是一个文件</span><br></pre></td></tr></table></figure>
+<p><em>main.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    print_pi();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p><em>程序代码(main.go)</em></p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"fmt"</span></span><br><span class="line">    <span class="string">"io"</span></span><br><span class="line">    <span class="string">"log"</span></span><br><span class="line">    <span class="string">"os"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">// 打开文件                 文件路径     处理参数    文件权限</span></span><br><span class="line">    file, err := os.OpenFile(<span class="string">"./data.txt"</span>, os.O_RDONLY, <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        log.Fatalf(<span class="string">"failed to open file: %v\n"</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 最后不要忘记关闭文件</span></span><br><span class="line">    <span class="keyword">defer</span> file.Close()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取文件信息</span></span><br><span class="line">    fileInfo, err := file.Stat()</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        log.Fatalf(<span class="string">"faild to get file info: %v\n"</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">    log.Printf(<span class="string">"The file's name is %v. Its size is %v\n"</span>, fileInfo.Name(), fileInfo.Size())</span><br><span class="line"></span><br><span class="line">    <span class="comment">// file实现了Reader和Writer以及Closer接口</span></span><br><span class="line">    <span class="comment">// 可以直接将文件内容拷贝到标准输入流</span></span><br><span class="line">    <span class="keyword">if</span> _, err := io.Copy(os.Stdin, file); err != <span class="literal">nil</span> &#123;</span><br><span class="line">        log.Fatalf(<span class="string">"failed to read file: %v\n"</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>代码说明:</strong></p>
+<p><code>#ifndef</code>可以用来检测是否定义了指定宏<code>TOOL_H</code>( 此宏名自行定义，确保不与标准库的宏重名发生冲突 )，如果没有定义则定义为<code>1</code>，并写入了函数声明。这样就可以达到防止多次包含造成的代码冗杂问题了。</p>
+<h1 id="如何声明全局变量"><a href="#如何声明全局变量" class="headerlink" title="如何声明全局变量"></a>如何声明全局变量</h1><p><strong>说明</strong></p>
+<p>我尝试将全局变量声明在头文件中，例如下面的代码。</p>
+<p><em>tool.h</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> TOOL_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TOOL_H 1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">double</span> PI = <span class="number">3.14</span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
 
-<p><em>执行结果</em></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">data.txt  main.go</span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> go run ./main.go</span></span><br><span class="line">2020/02/09 02:47:20 The file's name is data.txt</span><br><span class="line">Hello World</span><br><span class="line">我是一个普通的文件</span><br></pre></td></tr></table></figure>
+<p>我发现即使我在开头判断了是否已经导入了此头文件编译时也会出现<code>mulitple definetion</code>错误。我谷歌良久，发现<code>gcc</code>对于编译的每个文件都有一个<code>定义域</code>，它先对每个文件进行操作，之后在将每个文件拼接起来。</p>
+<p><strong>问题解决</strong></p>
+<p>不要将全局变量声明在头文件中，而是在头文件中使用<code>extern</code>关键字引出全局变量，下面是代码实例。</p>
+<p><em>tool.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">double</span> PI = <span class="number">3.1415926</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Hello %g\n"</span>, PI);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h1 id="写入文件"><a href="#写入文件" class="headerlink" title="写入文件"></a>写入文件</h1><p><em>程序代码(main.go)</em></p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"log"</span></span><br><span class="line">    <span class="string">"os"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    file, err := os.OpenFile(<span class="string">"new_file.txt"</span>, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, <span class="number">0600</span>)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        log.Fatalf(<span class="string">"failed to create file: %v\n"</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">defer</span> file.Close()</span><br><span class="line">    <span class="keyword">if</span> _, err := file.Write([]<span class="keyword">byte</span>(<span class="string">"Hello World\nI am a new file"</span>)); err != <span class="literal">nil</span> &#123;</span><br><span class="line">        log.Fatalf(<span class="string">"failed to write file: %v\n"</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><em>tool.h</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> TOOL_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TOOL_H</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">double</span> PI;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
 
-<p><em>执行结果</em></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> go run ./main.go </span></span><br><span class="line"><span class="meta">$</span><span class="bash"> cat new_file.txt </span></span><br><span class="line">Hello World</span><br><span class="line">I am a new fileroot</span><br></pre></td></tr></table></figure>
+<p><em>main.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    print_pi();</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"My Hello %g\n"</span>, PI);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>命令行执行</em></p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> gcc main.c tool.c <span class="literal">-o</span> main.exe</span><br><span class="line"><span class="variable">$</span> .\main.exe</span><br><span class="line">PI is <span class="number">3.1415926</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="隐藏函数以及全局变量"><a href="#隐藏函数以及全局变量" class="headerlink" title="隐藏函数以及全局变量"></a>隐藏函数以及全局变量</h1><p><strong>说明</strong></p>
+<p>一个源文件中并不是所有函数以及全局变量都应该被导出，否则源文件内所有细节会暴露无疑，且过于冗杂。</p>
+<p><strong>问题解决</strong></p>
+<p>使用<code>static</code>修饰函数以及全局变量可以控制它们不被导出。正确使用方式是头文件不包含<code>static</code>修饰的函数及全局变量，仅仅包含需要导出的对象，下面是代码实例。</p>
+<p><em>tool.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> _print_pi(<span class="keyword">void</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">double</span> PI = <span class="number">3.1415926</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    _print_pi();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> _print_pi(<span class="keyword">void</span>)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Hello %g\n"</span>, PI);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>tool.h</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> TOOL_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TOOL_H</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_pi</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<p><em>main.c</em></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    print_pi();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>命令行执行</em></p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$</span> gcc main.c tool.c <span class="literal">-o</span> main.exe</span><br><span class="line"><span class="variable">$</span> .\main.exe</span><br><span class="line">Hello <span class="number">3.1415926</span></span><br></pre></td></tr></table></figure>
       
     </div>
     
@@ -414,8 +440,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/posts/44763/" rel="next" title="Let's Encrypt证书免费生成">
-                <i class="fa fa-chevron-left"></i> Let's Encrypt证书免费生成
+              <a href="/posts/54506/" rel="next" title="Go文件读写详解">
+                <i class="fa fa-chevron-left"></i> Go文件读写详解
               </a>
             
           </div>
@@ -423,10 +449,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/posts/10129/" rel="prev" title="C语言头文件的正确使用方法">
-                C语言头文件的正确使用方法 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
