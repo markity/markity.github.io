@@ -21,7 +21,7 @@
 </tr>
 <tr>
 <td align="center">r</td>
-<td align="center">以读模式打开文件。<br />文件不存在那么打开失败，返回的文件指针为NULL。打开成功则文件指针指向文本开头</td>
+<td align="center">以读模式打开文件。<br />文件不存在或打开失败，返回的文件指针为NULL。打开成功则文件指针指向文本开头</td>
 </tr>
 <tr>
 <td align="center">a</td>
@@ -33,7 +33,7 @@
 </tr>
 <tr>
 <td align="center">r+</td>
-<td align="center">以读写方式打开文件。<br />文件不存在则打开失败，返回文件指针为NULL。文件存在则文件指针指向文本开口，并不会清空文件</td>
+<td align="center">以读写方式打开文件。<br />文件不存在或打开失败，返回文件指针为NULL。文件存在则文件指针指向文本开头，并不会清空文件</td>
 </tr>
 <tr>
 <td align="center">a+</td>
@@ -84,9 +84,7 @@
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ferror</span><span class="params">(FILE *fp)</span></span>;</span><br><span class="line"><span class="comment">// 如果返回值不为0，则读写时出现错误</span></span><br></pre></td></tr></table></figure>
 
 <p><strong><code>clearerr</code>函数清空<code>ferror</code>以及<code>feof</code>两个标记位，下面是它的函数原型</strong></p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clearerr</span><span class="params">(FILE *fp)</span></span>;</span><br></pre></td></tr></table></figure>
-
-]]></content>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clearerr</span><span class="params">(FILE *fp)</span></span>;</span><br></pre></td></tr></table></figure>]]></content>
   </entry>
   <entry>
     <title>C语言头文件的正确使用方法</title>

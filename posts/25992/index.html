@@ -87,7 +87,7 @@
 <meta property="og:description" content="前言最近学习C语言的文件读写，特此记录。 打开文件fopen函数用于打开文本，下面是它的函数原型 1234567891011FILE *fopen(const char *filename, const char *mode);&#x2F;*参数说明:  参数filename表示文件路径  参数mode表示文件打开模式*&#x2F;&#x2F;*返回值说明:  返回值类型为&#96;FILE*&#96;。如果打开文件失败则返回值为&#96;NULL&#96;">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-02-19T13:16:03.000Z">
-<meta property="article:modified_time" content="2020-02-19T13:16:26.745Z">
+<meta property="article:modified_time" content="2020-02-19T13:22:17.113Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="markity">
 <meta property="article:tag" content="markity blog">
@@ -371,7 +371,7 @@
 </tr>
 <tr>
 <td align="center">r</td>
-<td align="center">以读模式打开文件。<br />文件不存在那么打开失败，返回的文件指针为NULL。打开成功则文件指针指向文本开头</td>
+<td align="center">以读模式打开文件。<br />文件不存在或打开失败，返回的文件指针为NULL。打开成功则文件指针指向文本开头</td>
 </tr>
 <tr>
 <td align="center">a</td>
@@ -383,7 +383,7 @@
 </tr>
 <tr>
 <td align="center">r+</td>
-<td align="center">以读写方式打开文件。<br />文件不存在则打开失败，返回文件指针为NULL。文件存在则文件指针指向文本开口，并不会清空文件</td>
+<td align="center">以读写方式打开文件。<br />文件不存在或打开失败，返回文件指针为NULL。文件存在则文件指针指向文本开头，并不会清空文件</td>
 </tr>
 <tr>
 <td align="center">a+</td>
@@ -435,8 +435,6 @@
 
 <p><strong><code>clearerr</code>函数清空<code>ferror</code>以及<code>feof</code>两个标记位，下面是它的函数原型</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clearerr</span><span class="params">(FILE *fp)</span></span>;</span><br></pre></td></tr></table></figure>
-
-
       
     </div>
     
