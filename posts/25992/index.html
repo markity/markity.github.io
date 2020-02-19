@@ -79,15 +79,15 @@
 
 
 
-<meta name="description" content="前言最近学习C语言的文件读写，特此记录。 打开文件fopen函数用于打开文本，下面是它的函数原型 1234567891011FILE *fopen(const char *filename, const char *mode);&#x2F;*参数说明:  参数filename表示文件路径  参数mode表示文件打开模式*&#x2F;&#x2F;*返回值说明:  返回值类型为&#96;FILE*&#96;。如果打开文件失败则返回值为&#96;NULL&#96;">
+<meta name="description" content="前言最近学习C语言的文件读写，特此记录，使用gcc8.2编译器。 打开文件fopen函数用于打开文本，下面是它的函数原型 12345678FILE *fopen(const char *filename, const char *mode);&#x2F;*参数说明:  filename表示文件路径  mode表示文件打开模式返回值说明:  返回值类型为FILE*。如果打开文件失败则返回值为NULL，并设置e">
 <meta property="og:type" content="article">
 <meta property="og:title" content="C文件读写函数总结">
 <meta property="og:url" content="https://blog.markity.cn/posts/25992/index.html">
 <meta property="og:site_name" content="Markity&#39;s notes">
-<meta property="og:description" content="前言最近学习C语言的文件读写，特此记录。 打开文件fopen函数用于打开文本，下面是它的函数原型 1234567891011FILE *fopen(const char *filename, const char *mode);&#x2F;*参数说明:  参数filename表示文件路径  参数mode表示文件打开模式*&#x2F;&#x2F;*返回值说明:  返回值类型为&#96;FILE*&#96;。如果打开文件失败则返回值为&#96;NULL&#96;">
+<meta property="og:description" content="前言最近学习C语言的文件读写，特此记录，使用gcc8.2编译器。 打开文件fopen函数用于打开文本，下面是它的函数原型 12345678FILE *fopen(const char *filename, const char *mode);&#x2F;*参数说明:  filename表示文件路径  mode表示文件打开模式返回值说明:  返回值类型为FILE*。如果打开文件失败则返回值为NULL，并设置e">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-02-19T13:16:03.000Z">
-<meta property="article:modified_time" content="2020-02-19T13:22:17.113Z">
+<meta property="article:modified_time" content="2020-02-19T13:34:22.964Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="markity">
 <meta property="article:tag" content="markity blog">
@@ -353,9 +353,9 @@
       
 
       
-        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>最近学习C语言的文件读写，特此记录。</p>
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>最近学习C语言的文件读写，特此记录，使用<code>gcc8.2</code>编译器。</p>
 <h1 id="打开文件"><a href="#打开文件" class="headerlink" title="打开文件"></a>打开文件</h1><p><strong><code>fopen</code>函数用于打开文本，下面是它的函数原型</strong></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FILE *<span class="title">fopen</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *filename, <span class="keyword">const</span> <span class="keyword">char</span> *mode)</span></span>;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">参数说明:</span></span><br><span class="line"><span class="comment">  参数filename表示文件路径</span></span><br><span class="line"><span class="comment">  参数mode表示文件打开模式</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">返回值说明:</span></span><br><span class="line"><span class="comment">  返回值类型为`FILE*`。如果打开文件失败则返回值为`NULL`，并设置`errno`</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FILE *<span class="title">fopen</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *filename, <span class="keyword">const</span> <span class="keyword">char</span> *mode)</span></span>;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">参数说明:</span></span><br><span class="line"><span class="comment">  filename表示文件路径</span></span><br><span class="line"><span class="comment">  mode表示文件打开模式</span></span><br><span class="line"><span class="comment">返回值说明:</span></span><br><span class="line"><span class="comment">  返回值类型为FILE*。如果打开文件失败则返回值为NULL，并设置errno</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>文件打开模式详解</strong></p>
 <table>
@@ -399,7 +399,7 @@
 </tr>
 </tbody></table>
 <p><strong>文本模式与二进制模式</strong></p>
-<p>这两个模式互斥的，打开文件时仅能选择二者之一。若不选择，那么默认为文本模式<code>t</code>，例如<code>w</code>与<code>wt</code>时等价的。关于二者的区别可以参考<a href="https://blog.csdn.net/u012372584/article/details/77836168?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">此篇文章</a></p>
+<p>这两个模式互斥的，打开文件时仅能选择二者之一。若不选择，那么默认为文本模式<code>t</code>，例如<code>w</code>与<code>wt</code>是等价的。关于二者的区别可以参考<a href="https://blog.csdn.net/u012372584/article/details/77836168?utm_source=distribute.pc_relevant.none-task" target="_blank" rel="noopener">此篇文章</a></p>
 <h1 id="操作文件指针"><a href="#操作文件指针" class="headerlink" title="操作文件指针"></a>操作文件指针</h1><p><strong><code>fseek</code>函数用于调节文件指针，下面是它的函数原型</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fseek</span><span class="params">(FILE *fp，<span class="keyword">long</span> offset，<span class="keyword">int</span> origin)</span></span>;</span><br><span class="line"><span class="comment">// 成功时函数将返回零</span></span><br><span class="line"><span class="comment">// 如果发生错误，则返回EOF，并设置对应errno</span></span><br><span class="line"><span class="comment">// 此函数会清空feof标记位</span></span><br><span class="line">    </span><br><span class="line"><span class="comment">// origin表示开始偏移位置</span></span><br><span class="line"><span class="comment">// 例如，fseek(fp, 0, SEEK_END)可以将文件指针移动到文件末尾</span></span><br><span class="line"><span class="comment">// 例如，fseek(fp, 32, SEEK_SET)可以将文件指针移动到第32个字节后</span></span><br></pre></td></tr></table></figure>
 
@@ -410,7 +410,7 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fgetc</span><span class="params">(FILE *fp)</span></span>;</span><br><span class="line"><span class="comment">// 同getc</span></span><br><span class="line"><span class="comment">// 从文件中读取一个字符，如果读到文件结尾或者遇到错误则返回EOF，则会设置相应指示器(ferror或feof)以及errno</span></span><br></pre></td></tr></table></figure>
 
 <p><strong><code>fgets</code>函数从文件中读取一行字符串，下面是它的函数原型</strong></p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span> *<span class="title">fgets</span><span class="params">(<span class="keyword">char</span> *str, <span class="keyword">int</span> count, FILE *fp)</span></span>;</span><br><span class="line"><span class="comment">// str是存储字符串的指针</span></span><br><span class="line"><span class="comment">// count表示最大存入的字符数。fgets()函数最多读取count-1个字符，另外一个字符分配给\0。如果读到换行符则保留它，这样可以用于判断一行是不是读完了</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 成功后将str原样返回</span></span><br><span class="line"><span class="comment">// 失败或读到文件结尾(EOF)则返回NULL，则会设置相应指示器(ferror或feof)以及errno</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span> *<span class="title">fgets</span><span class="params">(<span class="keyword">char</span> *str, <span class="keyword">int</span> count, FILE *fp)</span></span>;</span><br><span class="line"><span class="comment">// str是存储字符串的指针</span></span><br><span class="line"><span class="comment">// count表示最大存入的字符数。fgets()函数最多读取count-1个字符，另外一个字符分配给\0。如果读到换行符则保留它，这样可以用于判断一行是不是读完了</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 成功后将str原样返回</span></span><br><span class="line"><span class="comment">// 失败或读到文件结尾(EOF)则返回NULL，并设置相应指示器(ferror或feof)以及errno</span></span><br></pre></td></tr></table></figure>
 
 <h1 id="写入文件"><a href="#写入文件" class="headerlink" title="写入文件"></a>写入文件</h1><p><strong><code>fputc</code>向文件写入一个字符，下面是它的函数原型</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fputc</span><span class="params">(<span class="keyword">int</span> c, FILE *)</span></span>;</span><br><span class="line"><span class="comment">// 同putc</span></span><br><span class="line"><span class="comment">// 如果成功则原样返回c</span></span><br><span class="line"><span class="comment">// 如果发生错误则返回EOF，并设置ferror以及errno</span></span><br></pre></td></tr></table></figure>
@@ -430,7 +430,7 @@
 <h1 id="错误处理"><a href="#错误处理" class="headerlink" title="错误处理"></a>错误处理</h1><p><strong><code>feof</code>判断是否达到文件末尾，下面是它的函数原型</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">feof</span><span class="params">(FILE *fp)</span></span>;</span><br><span class="line"><span class="comment">// 如果返回值不为0，则此文件以及读到了末尾</span></span><br></pre></td></tr></table></figure>
 
-<p><strong><code>ferror</code>函数判断读写倒错是否出现错误，下面是它的函数原型</strong></p>
+<p><strong><code>ferror</code>函数判断读写读错是否出现错误，下面是它的函数原型</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ferror</span><span class="params">(FILE *fp)</span></span>;</span><br><span class="line"><span class="comment">// 如果返回值不为0，则读写时出现错误</span></span><br></pre></td></tr></table></figure>
 
 <p><strong><code>clearerr</code>函数清空<code>ferror</code>以及<code>feof</code>两个标记位，下面是它的函数原型</strong></p>
