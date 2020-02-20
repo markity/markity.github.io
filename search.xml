@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>C文件读写函数总结</title>
+    <title>C语言文件读写总结</title>
     <url>/posts/25992/</url>
     <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>最近学习C语言的文件读写，特此记录，使用<code>gcc8.2</code>编译器。</p>
 <h1 id="打开文件"><a href="#打开文件" class="headerlink" title="打开文件"></a>打开文件</h1><p><strong><code>fopen</code>函数用于打开文本，下面是它的函数原型</strong></p>
