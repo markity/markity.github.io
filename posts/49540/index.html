@@ -79,13 +79,15 @@
 
 
 
-<meta name="description" content="忠于技术,乐于分享">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Markity&#39;s notes">
-<meta property="og:url" content="https://blog.markity.cn/archives/page/2/index.html">
+<meta name="description" content="前言const关键字用于修饰指针时非常灵活，其位置不同将会导致拥有截然不同的含义。最近正在学习相关的内容，顺便记录 类型1123456789char words[] &#x3D; &amp;#123;&quot;Yello World&quot;&amp;#125;;&#x2F;&#x2F; 下面的声明等同于 char const *ptr &#x3D; words;const char *ptr &#x3D; words;*ptr &#x3D; &#39;H&#39;;              &#x2F;&#x2F; 非">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C&#x2F;C++三种const指针">
+<meta property="og:url" content="https://blog.markity.cn/posts/49540/index.html">
 <meta property="og:site_name" content="Markity&#39;s notes">
-<meta property="og:description" content="忠于技术,乐于分享">
+<meta property="og:description" content="前言const关键字用于修饰指针时非常灵活，其位置不同将会导致拥有截然不同的含义。最近正在学习相关的内容，顺便记录 类型1123456789char words[] &#x3D; &amp;#123;&quot;Yello World&quot;&amp;#125;;&#x2F;&#x2F; 下面的声明等同于 char const *ptr &#x3D; words;const char *ptr &#x3D; words;*ptr &#x3D; &#39;H&#39;;              &#x2F;&#x2F; 非">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-03-01T09:36:27.000Z">
+<meta property="article:modified_time" content="2020-03-02T11:11:18.743Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="markity">
 <meta property="article:tag" content="markity blog">
@@ -127,13 +129,13 @@
 
 
 
-  <link rel="canonical" href="https://blog.markity.cn/archives/page/2/"/>
+  <link rel="canonical" href="https://blog.markity.cn/posts/49540/"/>
 
 
 
 
 
-  <title>Archive | Markity's notes</title>
+  <title>C/C++三种const指针 | Markity's notes</title>
   
 
 
@@ -152,7 +154,7 @@
     
   
 
-  <div class="container sidebar-position-left page-archive">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -270,337 +272,161 @@
           <div id="content" class="content">
             
 
-  
-  
-  
-  <div class="post-block archive">
-    <div id="posts" class="posts-collapse">
-      <span class="archive-move-on"></span>
+  <div id="posts" class="posts-expand">
+    
 
-      <span class="archive-page-counter">
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.markity.cn/posts/49540/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Markity">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Markity's notes">
+    </span>
+
+    
+      <header class="post-header">
+
         
         
+          <h1 class="post-title" itemprop="name headline">C/C++三种const指针</h1>
         
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-03-01T09:36:27+00:00">
+                2020-03-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
           
-        
-        Um..! 18 posts in total. Keep on posting.
-      </span>
 
-      
-
-        
-        
-        
-
-        
           
-          <div class="collection-title">
-            <h1 class="archive-year" id="archive-year-2019">2019</h1>
-          </div>
-        
-        
+            
+          
 
-        
+          
+          
 
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+          
 
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/31704/" itemprop="url">
-              
-                <span itemprop="name">C语言读取一行任意长度的字符串</span>
-              
-            </a>
-        
-      </h2>
+          
 
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-10-02T11:33:08+00:00"
-              content="2019-10-02" >
-          10-02
-        </time>
-      </div>
+          
 
-    </header>
-  </article>
+        </div>
+      </header>
+    
 
-
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/30904/" itemprop="url">
-              
-                <span itemprop="name">Python pip卸载所有第三方包</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-09-13T20:58:12+00:00"
-              content="2019-09-13" >
-          09-13
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
       
 
-        
-        
-        
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p><code>const</code>关键字用于修饰指针时非常灵活，其位置不同将会导致拥有截然不同的含义。最近正在学习相关的内容，顺便记录</p>
+<h1 id="类型1"><a href="#类型1" class="headerlink" title="类型1"></a>类型1</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> words[] = &#123;<span class="string">"Yello World"</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 下面的声明等同于 char const *ptr = words;</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> *ptr = words;</span><br><span class="line"></span><br><span class="line">*ptr = <span class="string">'H'</span>;              <span class="comment">// 非法, 表达式必须是可修改的左值</span></span><br><span class="line">ptr[<span class="number">1</span>] = <span class="string">'Y'</span>;            <span class="comment">// 非法, 表达式必须是可修改的左值</span></span><br><span class="line">ptr++;                   <span class="comment">// 合法, 允许指向其他对象</span></span><br><span class="line">ptr = <span class="string">"Beautiful World"</span>; <span class="comment">// 合法, 允许指向其他对象</span></span><br></pre></td></tr></table></figure>
 
-        
-        
+<p>这种类型的指针极为常见，我们经常在函数传递字符串参数时见到它。它的作用是保护指针指向的对象不被更改，但自身可以指向其他对象。换句话说<code>str</code>可以作为左值和右值；而<code>*str</code>不可作为左值，只可作为右值</p>
+<h1 id="类型2"><a href="#类型2" class="headerlink" title="类型2"></a>类型2</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> ival1 = <span class="number">7</span>;</span><br><span class="line"><span class="keyword">int</span> ival2 = <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> *<span class="keyword">const</span> ptr = &amp;ival2;</span><br><span class="line"></span><br><span class="line">ptr = &amp;ival2;   <span class="comment">// 非法, 表达式必须是可修改的左值</span></span><br><span class="line">*ptr = <span class="number">9</span>;       <span class="comment">// 合法, 允许修改指向对象的值</span></span><br></pre></td></tr></table></figure>
 
-        
+<p>此指针用于限制<code>ptr</code>不指向其他对象，其指向的对象在初始化并声明的时候便已固定且不可更改。然而可以通过这个指针修改所指向对象的值。简单地说，<code>ptr</code>不可作为左值，仅可作为右值；而<code>*ptr</code>可以作为左值和右值</p>
+<h1 id="类型3"><a href="#类型3" class="headerlink" title="类型3"></a>类型3</h1><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> ival1 = <span class="number">7</span>;</span><br><span class="line"><span class="keyword">int</span> ival2 = <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *ptr = &amp;ival1;</span><br><span class="line"></span><br><span class="line">ptr = &amp;ival2;   <span class="comment">// 非法, 表达式必须是可修改的左值</span></span><br><span class="line">*ptr = <span class="number">9</span>;       <span class="comment">// 非法, 表达式必须是可修改的左值</span></span><br></pre></td></tr></table></figure>
 
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+<p>此类型的指针最为严格，它组合了前两个形式。要求<code>ptr</code>与<code>*ptr</code>都不能作为左值，只能作为右值</p>
+<h1 id="关于const关键字的描述"><a href="#关于const关键字的描述" class="headerlink" title="关于const关键字的描述"></a>关于const关键字的描述</h1><p><strong>const分类</strong></p>
+<p>使用<code>const指针</code>时为了便于描述，我们将<code>const</code>分为<code>顶层const</code>与<code>底层const</code>。其中<code>顶层const</code>限定指针本身禁止指向其他对象，一旦声明定义其指向的对象，便再不可改变。而<code>底层const</code>则保护指针指向对象的值不被改变。</p>
+<p><strong>顶层const</strong></p>
+<p>下面是一些合法的<code>顶层const</code>声明</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> ival = <span class="number">7</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> *<span class="keyword">const</span> ptr1 = &amp;<span class="number">7</span>;</span><br><span class="line"><span class="keyword">int</span> **<span class="keyword">const</span> ptr2 = &amp;ptr1;</span><br></pre></td></tr></table></figure>
 
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/18257/" itemprop="url">
-              
-                <span itemprop="name">Docker Ubuntu解决中文乱码</span>
-              
-            </a>
-        
-      </h2>
+<p><strong>底层const</strong></p>
+<p>使用<code>底层const</code>值得注意的地方便是<code>typedef</code>类型，不要想当然的以为<code>typedef</code>类型仅仅只是别名。下面注明了一些<code>底层const</code>的陷阱</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">char</span> *name;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">    陷阱1, typedef 不是"字符串代换"</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> *n1 = <span class="string">"Markity"</span>;</span><br><span class="line">n1 = <span class="string">"Mali"</span>;                <span class="comment">// 合法, const 只保护 *n2 不被修改</span></span><br><span class="line"><span class="keyword">const</span> name n2 = <span class="string">"Markity"</span>;</span><br><span class="line">n2 = <span class="string">"Mail"</span>;                <span class="comment">// 非法, const 保护了 n1 不被更改</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">    陷阱2, 对于多级指针, const 保护了"最最最底层的指针对象"不被更改</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> **n3 = &amp;n1;</span><br><span class="line">*n3 = <span class="string">"Marry Li"</span>;           <span class="comment">// 合法, const 没有保护此二级指针</span></span><br><span class="line">**n3 = <span class="string">'K'</span>;                 <span class="comment">// 非法, const 保护了最底层的指针</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">    陷阱3, 多级指针与typedef</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">char</span> words[] = &#123;<span class="string">"Yello World"</span>&#125;;</span><br><span class="line"><span class="keyword">const</span> name n4 = words;</span><br><span class="line"><span class="keyword">const</span> *n5 = &amp;n4;</span><br><span class="line">*n5 = <span class="string">"Mary Li"</span>;            <span class="comment">// 非法, const保护了声明中最底层的指针, 即*n5</span></span><br><span class="line">**n5 = <span class="string">'K'</span>;                 <span class="comment">// 合法</span></span><br></pre></td></tr></table></figure>
 
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-08-20T12:34:19+00:00"
-              content="2019-08-20" >
-          08-20
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
+<h1 id="忠告"><a href="#忠告" class="headerlink" title="忠告"></a>忠告</h1><p>请避免使用多级指针的<code>底层const</code>声明，以免不必要的麻烦</p>
 
       
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/30227/" itemprop="url">
-              
-                <span itemprop="name">获取Go可执行文件路径</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-08-18T14:47:03+00:00"
-              content="2019-08-18" >
-          08-18
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-      
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/1120/" itemprop="url">
-              
-                <span itemprop="name">Go交叉编译</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-08-18T11:52:30+00:00"
-              content="2019-08-18" >
-          08-18
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-      
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/21829/" itemprop="url">
-              
-                <span itemprop="name">Go使用os/exec包构建脚本</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-08-18T09:24:49+00:00"
-              content="2019-08-18" >
-          08-18
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-      
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/19589/" itemprop="url">
-              
-                <span itemprop="name">Linux安装Golang</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-08-17T19:06:46+00:00"
-              content="2019-08-17" >
-          08-17
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-      
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/posts/38888/" itemprop="url">
-              
-                <span itemprop="name">Go Module基本使用</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2019-08-17T17:42:20+00:00"
-              content="2019-08-17" >
-          08-17
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-      
-
     </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/posts/27841/" rel="next" title="C语言fread和fwrite函数详解">
+                <i class="fa fa-chevron-left"></i> C语言fread和fwrite函数详解
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
   </div>
   
   
   
-
-  
-  <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/archives/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/archives/">1</a><span class="page-number current">2</span>
-  </nav>
+  </article>
 
 
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -608,6 +434,10 @@
 
 
           
+
+  
+
+
 
         </div>
         
@@ -735,6 +565,10 @@
   
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
