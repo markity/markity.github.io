@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Qt调用键盘钩子实现全局热键</title>
+    <url>/posts/20761/</url>
+    <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>键盘由系统API提供，不同系统间无法跨平台。利用键盘钩子可监听系统键盘按键，实现屏蔽按键，全局快捷键等功能。最近折腾这个花了很多时间，在此记录。下面记录的程序功能是，当用户敲击<code>CTRL ALT + C</code>键的时候打印一句话</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p><strong>创建一个简单的界面。包含两个按钮，一个用于绑定按键，一个用于解除绑定</strong></p>
+<p><img src="https://cloud-netdisk.oss-cn-chengdu.aliyuncs.com/%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87001.png" alt="界面"></p>
+<p><strong>主要代码，其中大多数细节已在注释当中</strong></p>
+<p><img src="https://cloud-netdisk.oss-cn-chengdu.aliyuncs.com/%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87002.png" alt="主要代码"></p>
+<h1 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h1><ul>
+<li><a href="https://docs.microsoft.com/zh-cn/windows/win32/api/winuser/nf-winuser-setwindowshookexa?redirectedfrom=MSDN" target="_blank" rel="noopener" title="传送门">SetWindowsHookExA函数</a></li>
+<li><a href="https://docs.microsoft.com/zh-cn/windows/win32/winmsg/about-hooks?redirectedfrom=MSDN" target="_blank" rel="noopener" title="传送门">WH_KEYBOARD_LL钩子</a></li>
+<li><a href="https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms644985(v=vs.85)?redirectedfrom=MSDN" target="_blank" rel="noopener" title="传送门">LowLevelKeyboardProc回调函数</a></li>
+<li><a href="https://docs.microsoft.com/zh-cn/windows/win32/api/winuser/ns-winuser-kbdllhookstruct?redirectedfrom=MSDN" target="_blank" rel="noopener" title="传送门">KBDLLHOOKSTRUCT结构</a></li>
+<li><a href="https://docs.microsoft.com/zh-cn/windows/win32/inputdev/virtual-key-codes" target="_blank" rel="noopener" title="传送门">Virtual-Key Codes虚拟键码</a></li>
+<li><a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getkeystate" target="_blank" rel="noopener" title="传送门">GetKeyState函数</a></li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
     <title>C/C++三种const指针</title>
     <url>/posts/49540/</url>
     <content><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p><code>const</code>关键字用于修饰指针时非常灵活，其位置不同将会导致拥有截然不同的含义。最近正在学习相关的内容，顺便记录</p>
