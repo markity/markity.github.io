@@ -1,0 +1,273 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>关于email的一切(1)-SMTP发信 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="前言:email是工作生活中经使用的通讯工具, 笔者很是好奇它的工作原理, 故有此系列。这个系列聚焦以下几点:">
+  
+  <meta name="description" content="前言:email是工作生活中经使用的通讯工具, 笔者很是好奇它的工作原理, 故有此系列。这个系列聚焦以下几点:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于email的一切(1)-SMTP发信">
+<meta property="og:url" content="http://example.com/2023/05/16/email1/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="前言:email是工作生活中经使用的通讯工具, 笔者很是好奇它的工作原理, 故有此系列。这个系列聚焦以下几点:">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email.png">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email-tls.jpg">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email-mime.png">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email-mime-struct.png">
+<meta property="article:published_time" content="2023-05-16T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-09-15T15:36:48.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="没用的冷知识">
+<meta property="article:tag" content="网络协议">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/05/16/email1/">
+  <time datetime="2023-05-16T16:57:55.000Z">
+    2023-05-16
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">关于email的一切(1)-SMTP发信</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言:"></a>前言:</h3><p>email是工作生活中经使用的通讯工具, 笔者很是好奇它的工作原理, 故有此系列。这个系列聚焦以下几点:</p>
+<span id="more"></span>
+
+<ul>
+<li>SMTP协议</li>
+<li>POP3&#x2F;IMAP4协议</li>
+</ul>
+<p>本文讨论SMTP协议, 即发信协议。POP3协议后续文章讨论。</p>
+<h3 id="邮件发送的整体架构"><a href="#邮件发送的整体架构" class="headerlink" title="邮件发送的整体架构"></a>邮件发送的整体架构</h3><p>开局一张图:</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email.png" alt="邮件收发"></p>
+<h3 id="SMTP-netcat初体验"><a href="#SMTP-netcat初体验" class="headerlink" title="SMTP netcat初体验"></a>SMTP netcat初体验</h3><p>SMTP即Simple Mail Transfer Protocol, 是用来发邮件的协议。要使用它很简单, 首先需要tcp连接上相应的SMTP服务器, 这里我们用nc进行连接, (此处注意别用smtp.qq.com, netcat发送的内容是\n结尾的, 而qq邮箱不能接受这种非标准的兼容选项, 因此我们选择gmail):</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt; nc smtp.gmail.com 587</span><br><span class="line">220 smtp.gmail.com ESMTP n8-20020a170902e54800b001a69dfd918dsm13220791plf.187 - gsmtp</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>服务端的输出格式是: 错误代码[空格]内容\r\n, 220是Service ready的意思, 要查询更多错误代码, 参阅<a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc5321.html">这里</a>。</p>
+</blockquote>
+<p>接下来我们需要键入ehlo得到这个邮件服务器的参数。客户端连接上SMTP服务后先执行ehlo命令, 为了便于查看输入和输出, 我用<code>[]</code>框住了用户输入:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&gt; nc smtp.gmail.com 587</span><br><span class="line">220 smtp.gmail.com ESMTP n8-20020a170902e54800b001a69dfd918dsm13220791plf.187 - gsmtp</span><br><span class="line">[ehlo mycom]</span><br><span class="line">250-smtp.gmail.com at your service, [183.230.12.212]</span><br><span class="line">250-SIZE 35882577</span><br><span class="line">250-8BITMIME</span><br><span class="line">250-STARTTLS</span><br><span class="line">250-ENHANCEDSTATUSCODES</span><br><span class="line">250-PIPELINING</span><br><span class="line">250-CHUNKING</span><br><span class="line">250 SMTPUTF8</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>ehlo命令后面可以跟任何字符串, 标准说这个字符串是标识客户端身份的, 但是实际上没啥用, 按惯例可以将它设置为计算机的hostname。我们可以观察到最后一行是250[空格]SMTPUTF8, 前面都是250[横线]xxx, 只有最后一行输出是用空格分割的, 前面的都是用横线分割的, 这是用于判断服务端输出结束的凭据。</p>
+</blockquote>
+<p>服务端读到ehlo命令后会响应自己支持的选项, 250是响应代码, 代表Requested mail action okay, completed。下面解释下一些选项:</p>
+<ul>
+<li>SIZE: 邮件数据的最大字节数</li>
+<li>STARTTLS: 由于我们这里是tcp裸连接, 没有任何加密, 这个选项代表服务端允许tls握手</li>
+</ul>
+<blockquote>
+<p>在连接到smtp服务后, 客户端首先需要ehlo, 然后可选地选择是否进行tls握手加密。qq发邮件可以自行选择是否进行tls&#x2F;ssl加密, 但是gmail强制要求进行tls握手之后才能发送, 这样就不会被运营商监听到邮件内容。</p>
+</blockquote>
+<p>gmail强行要求发信前进行tls握手, 因此netcat这个小工具没法满足我们的要求, 要进行握手, 使用<code>STARTTLS</code>命令:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">nc smtp.gmail.com 587</span><br><span class="line">220 smtp.gmail.com ESMTP n8-20020a170902e54800b001a69dfd918dsm13220791plf.187 - gsmtp</span><br><span class="line">[ehlo mycom]</span><br><span class="line">250-smtp.gmail.com at your service, [183.230.12.212]</span><br><span class="line">250-SIZE 35882577</span><br><span class="line">250-8BITMIME</span><br><span class="line">250-STARTTLS</span><br><span class="line">250-ENHANCEDSTATUSCODES</span><br><span class="line">250-PIPELINING</span><br><span class="line">250-CHUNKING</span><br><span class="line">250 SMTPUTF8</span><br><span class="line">[STARTTLS]</span><br><span class="line">220 2.0.0 Ready to start TLS</span><br><span class="line">... 这里我们需要用程序进行tls协商了, 然而nc没法搞</span><br></pre></td></tr></table></figure>
+
+<p>关于升级到tls, 这里给个图吧:</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email-tls.jpg" alt="加密升级示意图"></p>
+<h3 id="使用go编写的程序与qq-smtp服务器通讯"><a href="#使用go编写的程序与qq-smtp服务器通讯" class="headerlink" title="使用go编写的程序与qq smtp服务器通讯"></a>使用go编写的程序与qq smtp服务器通讯</h3><p>之前提到nc发送的字符串是用\n结尾的, qq邮箱不支持, 因此我们自己写个\r\n结尾的nc版本连接qq服务器, 并用它发送邮件试试。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;bufio&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;net&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	conn, err := net.Dial(<span class="string">&quot;tcp&quot;</span>, <span class="string">&quot;smtp.qq.com:587&quot;</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// conn reader</span></span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> &#123;</span><br><span class="line">			buf := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">256</span>)</span><br><span class="line">			n, err := conn.Read(buf)</span><br><span class="line">			<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">				<span class="built_in">panic</span>(err)</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			_, err = os.Stdout.Write(buf[:n])</span><br><span class="line">			<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">				<span class="built_in">panic</span>(err)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// stdin reader</span></span><br><span class="line">	scanner := bufio.NewScanner(os.Stdin)</span><br><span class="line">	<span class="keyword">for</span> scanner.Scan() &#123;</span><br><span class="line">		_, err := conn.Write([]<span class="type">byte</span>(fmt.Sprintf(<span class="string">&quot;%s\r\n&quot;</span>, scanner.Text())))</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">select</span> &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>为什么我们又切换到了qq邮箱? 因为gmail发邮件强制要求先ehlo后starttls, 我不想进行tls握手(写代码太麻烦了)。因此我们用qq邮箱来做, 它不强制要求使用tls通讯。</p>
+</blockquote>
+<p>下面我们使用AUTH LOGIN命令进行身份认证:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&gt; <span class="built_in">echo</span> -n <span class="string">&quot;1494645263@qq.com&quot;</span> | <span class="built_in">base64</span></span><br><span class="line">MTQ5NDY0NTI2M0BxcS5jb20=</span><br><span class="line">&gt; <span class="built_in">echo</span> -n <span class="string">&quot;你从qq邮箱设置中拿到的授权码&quot;</span> | <span class="built_in">base64</span></span><br><span class="line">cXJjY2xxxxxxxmVxYmFkYg==</span><br><span class="line">&gt; go run .</span><br><span class="line">220 newxmesmtplogicsvrszc2-1.qq.com XMail Esmtp QQ Mail Server.</span><br><span class="line">[EHLO mycom]</span><br><span class="line">250-newxmesmtplogicsvrsza12-0.qq.com</span><br><span class="line">250-PIPELINING</span><br><span class="line">250-SIZE 73400320</span><br><span class="line">250-STARTTLS</span><br><span class="line">250-AUTH LOGIN PLAIN XOAUTH XOAUTH2</span><br><span class="line">250-AUTH=LOGIN</span><br><span class="line">250-MAILCOMPRESS</span><br><span class="line">250 8BITMIME</span><br><span class="line">[AUTH LOGIN]</span><br><span class="line">334 VXNlcm5hbWU6</span><br><span class="line">[MTQ5NDY0NTI2M0BxcS5jb20=]</span><br><span class="line">334 UGFzc3dvcmQ6</span><br><span class="line">[cXJjY2xxxxxxxmVxYmFkYg==]</span><br><span class="line">235 Authentication successful</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>VXNlcm5hbWU6进行base64解码后就是<code>Username:</code>, UGFzc3dvcmQ6则是<code>Password:</code>, 要base64解码可以用到<code>echo -n &quot;VXNlcm5hbWU6&quot; | base64 -d</code>证实。</p>
+</blockquote>
+<p>然后就能进行发信操作了, 我们从上面的<code>235 Authentication successful</code>处继续:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">235 Authentication successful</span><br><span class="line">[MAIL FROM:&lt;1494645263@qq.com&gt;]</span><br><span class="line">250 OK</span><br><span class="line">[RCPT TO:&lt;3402002560@qq.com&gt;]</span><br><span class="line">250 OK</span><br><span class="line">[DATA]</span><br><span class="line">354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;.</span><br><span class="line">[Subject: Hello World]</span><br><span class="line">[From: 旭旭科技 &lt;1494645263@qq.com&gt;]	// 这里允许署名一下, 接收者能看到我们的署名, 但也允许不署名 From: &lt;xxx@qq.com&gt; 就是不署名的情况</span><br><span class="line">[To: &lt;3402002560@qq.com&gt;]			   // To也能署名, 这里不署</span><br><span class="line">[]                                     // 注意这是一个空行</span><br><span class="line">[Hello World]</span><br><span class="line">[.]</span><br><span class="line">[]                                     // 注意这是一个空行</span><br><span class="line">250 OK: queued as.</span><br></pre></td></tr></table></figure>
+
+<p>然后我们就能收到Hello World的讯息了, 是不是很简单😃。</p>
+<p>如果我们要复用这个连接, 要用它发送多个讯息, 这时使用RSET命令清空之前的缓存, 这会清空之前的<code>MAIL FROM</code>, <code>RCPT TO</code>命令。<code>RSET</code>后就能重新进行发送邮件操作了。</p>
+<p>最后, 要退出, 使用<code>QUIT</code>命令, 服务端响应221 Service closing transmission channel后会close socket:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[QUIT]</span><br><span class="line">221 Bye.</span><br></pre></td></tr></table></figure>
+
+<h3 id="关于抄送和密送"><a href="#关于抄送和密送" class="headerlink" title="关于抄送和密送"></a>关于抄送和密送</h3><p>一封邮件可以发给多个人, 我们可以通过多次<code>RCPT</code>命令实现。以前我还以为一封邮件只能有一个收信人, 看来我对email的认知还是太少了😅。</p>
+<p>此外, 一封邮件也能抄送给多个人, 比如我们邮件发送给了Bob并抄送给了Alice, Bob和Alice都能收到这封邮件, 并且Bob和Alice都知道此邮件的接收者是Bob, 也都知道这封邮件被抄送给了Alice。那么这个功能有啥用呢, 我认为它是用来区分收信者与旁边者的一个凭据, 强调接收方是Bob而已。</p>
+<p>一封邮件也能密送给多个人, 区别就在密送的对象不会公开给其他人, 比如我们发送邮件给Bob并密送给Alice, Bob和Alice都能收到这封邮件, 但是Bob却不知道这封邮件密送给了Alice, 而Alice知道这封邮件来自我, 发送给Bob。密送很适合打小报告。</p>
+<p>如果要发给Bob(<a href="mailto:&#x31;&#49;&#48;&#64;&#x71;&#x71;&#x2e;&#x63;&#111;&#109;">&#x31;&#49;&#48;&#64;&#x71;&#x71;&#x2e;&#x63;&#111;&#109;</a>), 并抄送给Alice(<a href="mailto:&#50;&#x32;&#48;&#64;&#113;&#x71;&#46;&#99;&#111;&#x6d;">&#50;&#x32;&#48;&#64;&#113;&#x71;&#46;&#99;&#111;&#x6d;</a>)那么这样做:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[MAIL FROM:&lt;1494645263@qq.com&gt;]</span><br><span class="line">250 OK</span><br><span class="line">[RCPT TO:&lt;110@qq.com&gt;]</span><br><span class="line">250 OK</span><br><span class="line">[RCPT TO:&lt;220@qq.com&gt;]</span><br><span class="line">220 OK</span><br><span class="line">[DATA]</span><br><span class="line">354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;.</span><br><span class="line">[Subject: Hello World]</span><br><span class="line">[From: 旭旭科技 &lt;1494645263@qq.com&gt;]</span><br><span class="line">[To: &lt;110@qq.com&gt;]</span><br><span class="line">[Bcc: &lt;220@qq.com&gt;]</span><br><span class="line">[]							// 这是空行</span><br><span class="line">[Hello World]</span><br><span class="line">[.]</span><br><span class="line">[]							// 这是空行</span><br><span class="line">250 OK: queued as.</span><br></pre></td></tr></table></figure>
+
+<p>然后Bob收到的邮件就能看到发信人是<a href="mailto:&#49;&#x34;&#x39;&#52;&#x36;&#52;&#53;&#50;&#54;&#51;&#x40;&#x71;&#113;&#46;&#99;&#111;&#109;">&#49;&#x34;&#x39;&#52;&#x36;&#52;&#53;&#50;&#54;&#51;&#x40;&#x71;&#113;&#46;&#99;&#111;&#109;</a>, 但他看不到密送给了Alice。Alice收到的邮件能看到发信人是我, 收信人是Bob, 密送给了Alice。</p>
+<blockquote>
+<p>如果一封邮件被密送给了A, B, C三个人, A不会知道这封邮件被密送给了B和C。密送是很隐秘的, 它就是用来打小报告的。</p>
+</blockquote>
+<p>使用smtp发送邮件的时候, 邮件也许不会保存在“已发送”里面, 如果想要知道自己的程序发了什么, 在qq邮箱的设置-&gt;账户中勾选上“SMTP发信后保存到服务器”。</p>
+<h3 id="data的的格式-mime"><a href="#data的的格式-mime" class="headerlink" title="data的的格式: mime"></a>data的的格式: mime</h3><p>之前我们data的正文只是“Hello World”几个字符, 实际上使用MIME(Multipurpose Internet Mail Extensions), 可以包含多种多样的媒体格式。</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email-mime.png" alt="data的结构"></p>
+<blockquote>
+<p>这里请注意, MIME-Version是个兼容性选项, 但是直到今天它还是1.0, 因此我们可以认为它永远都是1.0。</p>
+</blockquote>
+<p>mime消息包含mime header和mime body, mime body又分为了body header和body payload。boundary是一串随机的字符串, 用于放在body之间做分割。</p>
+<p>邮件的mime是多级的内嵌结构:</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/email-mime-struct.png" alt="多级的内嵌结构"></p>
+<p>举个例子, 如果我们要发送一串文字, 并且包含一个图片附件, 那么data就大概是这样的(不能进行缩进, 但是为了可读性, 我手动进行了缩进):</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">From: from@qq.com</span><br><span class="line">To: dest@qq.com</span><br><span class="line">Subject: 测试邮件</span><br><span class="line">Content-Type: multipart/mixed; boundary&quot;X_NextPart_A&quot;</span><br><span class="line"></span><br><span class="line">This is a multi-part message in MIME format</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br><span class="line">	Content-Type: multipart/alternative; boundary=&quot;X_NextPart_B&quot;;</span><br><span class="line">	--X_NextPart_B</span><br><span class="line">		Content-Type: text/plain; charset=&quot;utf-8&quot;</span><br><span class="line">		Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">		一串文本的base64编码, 能够通过cid:随机的id.jpg引用附件的真实url</span><br><span class="line"></span><br><span class="line">	--X_NextPart_B</span><br><span class="line">		Content-Type: text/html; charset=&quot;utf-8&quot;</span><br><span class="line">		Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">		一串文本的html, 能够通过cid:随机的id.jpg引用附件的真实url</span><br><span class="line"></span><br><span class="line">	--X_NextPart_B</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br><span class="line">	Content-Type: image/jpeg;</span><br><span class="line">	Content-Disposition: attachment; filename=&quot;avatar.jpg&quot;</span><br><span class="line">	Content-ID: &lt;随机的id.jpg&gt;</span><br><span class="line">	Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">	图片的base64编码</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>具体的内容可以指定编码, base64是常见的编码, 使用这种编码的原因是它能把特殊符号转化成常见的符号, 不会与分割字符串冲突。此处, 我们规定了一个附件, 它下载下来的文件名是avatar.jpg。Content-Disposition: attachment代表它是附件。Content-ID可以指定它的引用别名, 可以在其它地方使用cid:随机的id.jpg将其替换成图片的真实url。</p>
+</blockquote>
+<p><code>multipart/alternative</code>的语义是: 其中内嵌的多条内容都能等价地替换。邮件客户端只能在里面选择其中之一进行展示。</p>
+<p>网络中常见邮件没有附件, 图片也是从第三方链接引过来的(并使用html的img标签显示), 这时mime header一般都不是mixed, 它一般就是alternative的。</p>
+<p>一般邮件的alternative包含两种内容, 一种是html, 一种是plain。有的设备并不能读取html的内容, 因此可以选择展示plain的内容。大多数邮件都会生成html和plain两种可替代内容, 提高邮件的普适性。</p>
+<p>下面就是网络中常见邮件的格式, 我们在网络上收到的图片一般都是这样的, 不包含附件, 也没有内嵌图片, 如果要显示图片, 一般都是引用的外链:</p>
+<p>它有这样的分层结构:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">alternative</span><br><span class="line">	text/plain</span><br><span class="line">	text/html</span><br></pre></td></tr></table></figure>
+
+<p>举个例子:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">From: from@qq.com</span><br><span class="line">To: dest@qq.com</span><br><span class="line">Subject: 测试邮件</span><br><span class="line">Content-Type: multipart/alternative; boundary=&quot;X_NextPart_A&quot;</span><br><span class="line"></span><br><span class="line">This is a multi-part message in MIME format</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br><span class="line">	Content-Type: text/plain; charset=&quot;utf-8&quot;</span><br><span class="line">	Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">	一串文本的base64编码, 不能显示图片</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br><span class="line">	Content-Type: text/html; charset=&quot;utf-8&quot;</span><br><span class="line">	Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">	一串文本的html, 可以用&lt;img&gt;标签, src=外部链接引入外部的图片</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>常见的邮件一般只包含文字和图片, 它一般不会把图片的二进制数据发送给邮件服务器, 而是直接引第三方的图片, 图片可以放在图床或对象存储里边, 上传图片的二进制成本太高。</p>
+</blockquote>
+<p>下面是邮件的一般需求, 其分层结构如下:</p>
+<p>需求1(最复杂的情形):</p>
+<ol>
+<li>具有文本和html版本</li>
+<li>具有内嵌的图片</li>
+<li>具有附件</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">multipart/mixed</span><br><span class="line">    multipart/alternative</span><br><span class="line">        text/plain</span><br><span class="line">        multipart/related</span><br><span class="line">            text/html</span><br><span class="line">            inline image</span><br><span class="line">    attachment</span><br></pre></td></tr></table></figure>
+
+<p>例子:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">From: from@qq.com</span><br><span class="line">To: dest@qq.com</span><br><span class="line">Subject: 测试邮件</span><br><span class="line">Content-Type: multipart/mixed; boundary=&quot;X_NextPart_A&quot;</span><br><span class="line"></span><br><span class="line">This is a multi-part message in MIME format</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br><span class="line">	Content-Type: multipart/alternative; boundary=&quot;X_NextPart_B&quot;</span><br><span class="line"></span><br><span class="line">	--X_NextPart_B</span><br><span class="line">		Content-Type: text/plain; charset=&quot;utf-8&quot;</span><br><span class="line">		Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">		文字的base64编码, 能够通过cid:随机的id2.jpg引用图片的真实url</span><br><span class="line"></span><br><span class="line">	--X_NextPart_B</span><br><span class="line">	Content-Type: multipart/related; boundary=&quot;X_NextPart_C&quot;</span><br><span class="line">		--X_NextPart_C</span><br><span class="line">			Content-Type: text/html; charset=&quot;utf-8&quot;</span><br><span class="line">			Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">			html内容的base64编码, 能够通过cid:随机的id1.jpg或cid:随机的id2.jpg引用图片的真实url</span><br><span class="line"></span><br><span class="line">		--X_NextPart_C</span><br><span class="line">			Content-Type: image/jpeg;</span><br><span class="line">			Content-Disposition: inline;</span><br><span class="line">			Content-ID: &lt;随机的id1.jpg&gt;</span><br><span class="line">			Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">			图片1的base64</span><br><span class="line"></span><br><span class="line">		--X_NextPart_C</span><br><span class="line"></span><br><span class="line">	html的base64编码</span><br><span class="line"></span><br><span class="line">	--X_NextPart_B</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br><span class="line">	Content-Type: image/jpeg;</span><br><span class="line">	Content-Disposition: inline;</span><br><span class="line">	Content-ID: &lt;随机的id2.jpg&gt;</span><br><span class="line">	Content-Transfer-Encoding: base64</span><br><span class="line"></span><br><span class="line">	图片2的base64</span><br><span class="line"></span><br><span class="line">--X_NextPart_A</span><br></pre></td></tr></table></figure>
+
+<p>需求2(网络邮件最常见的形式):</p>
+<ol>
+<li>具有文本和html版本</li>
+<li>没有内嵌图片和附件</li>
+<li>图片是引用的外链</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">multipart/alternative</span><br><span class="line">	text/plain</span><br><span class="line">	text/html</span><br></pre></td></tr></table></figure>
+
+<p>需求3:</p>
+<ol>
+<li>具有文本和html版本</li>
+<li>只有内嵌图片, 没有附件</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">multipart/alternative</span><br><span class="line">	text/plain</span><br><span class="line">	multipart/related</span><br><span class="line">		text/html</span><br><span class="line">		inline image</span><br><span class="line">		inline image</span><br></pre></td></tr></table></figure>
+
+<p>需求4:</p>
+<ol>
+<li>具有文本和html版本</li>
+<li>有附件, 没有内嵌图片</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">multipart/mixed</span><br><span class="line">	multipart/alternative</span><br><span class="line">		text/plain</span><br><span class="line">		text/html</span><br><span class="line">	attachment</span><br></pre></td></tr></table></figure>
+
+<p>相关参考来自<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/3902455/mail-multipart-alternative-vs-multipart-mixed">这里</a>。</p>
+<h3 id="SMTP协议总结"><a href="#SMTP协议总结" class="headerlink" title="SMTP协议总结"></a>SMTP协议总结</h3><p>协议本身不复杂, 复杂的是mime消息数据的规则。上面提到的提示就是smtp的所有主干部分了, 下面列举一些其它的命令:</p>
+<ul>
+<li>HELO: 同EHLO, 但是EHLO是HELO的超集, 它返回了邮件服务器的更多拓展参数, 一般不用HELO。</li>
+<li>VRFY: 检查服务器是否存在此邮箱账号, 这个选项一般不被邮箱服务器支持, 不论是gmail还是qq都没有支持。这是为了安全。</li>
+<li>NOOP: 这个命令可以用于心跳检测, 对端总是回应250错误码, 可以用来保活。</li>
+</ul>
+<p>此外, 如果我们用smtp协议发邮件, 如果在data命令后发内容中途出现了socket错误, 此时我们无法断定邮件是否发出。如果程序选择重连smtp服务器并重新发送, 可能导致同样的邮件被发出两次。这是不可避免的。smtp协议是简单的, 没法预防这种重放问题。如果要解决, 我的想法是实现一个更牛的协议, 做一个二阶段提交。但是这不是刚需, 一个邮件被发两次也不是什么大错, 因此smtp选择忽视这个问题。</p>
+<h3 id="发送之后"><a href="#发送之后" class="headerlink" title="发送之后?"></a>发送之后?</h3><p>邮件递交给邮箱服务器后, 由邮件服务器递交给另外一个邮件服务器的过程叫relaying。此时邮件服务器收到邮件后会尽最大努力发出。但是如果发不出, 比如网络问题或者根本没有这个邮箱, 邮件就会被“退回”。</p>
+<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><ul>
+<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/3902455/mail-multipart-alternative-vs-multipart-mixed">关于multipart&#x2F;mixed, multipart&#x2F;related和multipart&#x2F;alternative</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/522806299">smtp简析</a></li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/%E6%B2%A1%E7%94%A8%E7%9A%84%E5%86%B7%E7%9F%A5%E8%AF%86/" rel="tag">没用的冷知识</a>, <a class="tags-none-link" href="/tags/%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE/" rel="tag">网络协议</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

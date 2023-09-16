@@ -1,0 +1,136 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>linux的线程私有数据以及编译器stack_protector选项 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="fs和gs提供per-task数据这两个寄存器被用来访问一些线程私有数据, 其中fs被用户态程序使用, gs被内核态使用。应该知道, 在使用pthread时, 可以通过pthread_self()拿到当前线程的线程id, 其实就是从fs里面拿数据。至于为什么能这么做, 可以参考这篇文章, 详细介绍了linux实现per-task数据的原理。作为应用, 我们只需通过glibc间接的访问errbo和p">
+  
+  <meta name="description" content="fs和gs提供per-task数据这两个寄存器被用来访问一些线程私有数据, 其中fs被用户态程序使用, gs被内核态使用。应该知道, 在使用pthread时, 可以通过pthread_self()拿到当前线程的线程id, 其实就是从fs里面拿数据。至于为什么能这么做, 可以参考这篇文章, 详细介绍了linux实现per-task数据的原理。作为应用, 我们只需通过glibc间接的访问errbo和p">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux的线程私有数据以及编译器stack_protector选项">
+<meta property="og:url" content="http://example.com/2023/02/27/seg64/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="fs和gs提供per-task数据这两个寄存器被用来访问一些线程私有数据, 其中fs被用户态程序使用, gs被内核态使用。应该知道, 在使用pthread时, 可以通过pthread_self()拿到当前线程的线程id, 其实就是从fs里面拿数据。至于为什么能这么做, 可以参考这篇文章, 详细介绍了linux实现per-task数据的原理。作为应用, 我们只需通过glibc间接的访问errbo和p">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-02-27T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-05-19T05:22:24.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="security">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/27/seg64/">
+  <time datetime="2023-02-27T16:57:55.000Z">
+    2023-02-27
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">linux的线程私有数据以及编译器stack_protector选项</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="fs和gs提供per-task数据"><a href="#fs和gs提供per-task数据" class="headerlink" title="fs和gs提供per-task数据"></a>fs和gs提供per-task数据</h3><p>这两个寄存器被用来访问一些线程私有数据, 其中<code>fs</code>被用户态程序使用, <code>gs</code>被内核态使用。应该知道, 在使用pthread时, 可以通过<code>pthread_self()</code>拿到当前线程的线程id, 其实就是从<code>fs</code>里面拿数据。至于为什么能这么做, 可以参考<a target="_blank" rel="noopener" href="https://markity.github.io/2023/03/18/thread_local/">这篇文章</a>, 详细介绍了<code>linux</code>实现per-task数据的原理。作为应用, 我们只需通过glibc间接的访问<code>errbo</code>和<code>pthread_self()</code>即可。例如看glibc的代码:</p>
+<span id="more"></span>
+
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#  <span class="keyword">define</span> THREAD_SELF \</span></span><br><span class="line"><span class="meta">  (&#123; struct pthread *__self;						      \</span></span><br><span class="line"><span class="meta">     asm (<span class="string">&quot;mov %%fs:%c1,%0&quot;</span> : <span class="string">&quot;=r&quot;</span> (__self)				      \</span></span><br><span class="line"><span class="meta">	  : <span class="string">&quot;i&quot;</span> (offsetof (struct pthread, header.self)));	 	      \</span></span><br><span class="line"><span class="meta">     __self;&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="type">pthread_t</span></span><br><span class="line">__pthread_self (<span class="type">void</span>)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> (<span class="type">pthread_t</span>) THREAD_SELF;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看不懂没关系, 这个属于系统内核细节, 只需要知道内核私有数据通过<code>fs</code>寄存器访问就行了, 至于我们怎么拿这些私有数据, 那是glibc该考虑的事情, 作为用户态程序, 只管调别人写好的函数就完了。另外, <code>errno</code>也属于线程私有数据, 知道了上面的这些事情, 很容易理解为啥<code>errno</code>是线程独享的了。</p>
+<h3 id="栈溢出攻击保护机制"><a href="#栈溢出攻击保护机制" class="headerlink" title="栈溢出攻击保护机制"></a>栈溢出攻击保护机制</h3><p>介绍另一个奇妙的东西: <code>stack canary</code>, 这是一个安全策略。这个安全选项专门用于预防栈溢出攻击, 每个线程(在内核中对应一个<code>task_struct</code>)都有它自己的一个<code>stack canary</code>, 它相当于一个随机数。在函数入口需要向函数栈<code>push</code>一个<code>canary</code>, 函数出口需要将函数栈中的<code>canary</code>和原始值做对比。这个<code>stack canary</code>其实就是存储在<code>fs</code>中的, 它也是线程私有数据!当我们开启gcc的<code>fstack-protector</code>时, 编译器就自己打桩, 做相关检查。我们可以通过<code>fs:40</code>拿到这个随机数。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tags-none-link" href="/tags/security/" rel="tag">security</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>信号处理函数是如何返回的(2)? | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="前言:书接上回, 我们介绍了信号栈帧, 也就是下面这个东西:">
+  
+  <meta name="description" content="前言:书接上回, 我们介绍了信号栈帧, 也就是下面这个东西:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="信号处理函数是如何返回的(2)?">
+<meta property="og:url" content="http://example.com/2023/02/26/sigreturn2/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="前言:书接上回, 我们介绍了信号栈帧, 也就是下面这个东西:">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/srop-stack.png">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/play.png">
+<meta property="article:published_time" content="2023-02-26T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-09-15T15:56:14.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="security">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/srop-stack.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/26/sigreturn2/">
+  <time datetime="2023-02-26T16:57:55.000Z">
+    2023-02-26
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">信号处理函数是如何返回的(2)?</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言:"></a>前言:</h3><p>书接<a target="_blank" rel="noopener" href="https://markity.github.io/2023/02/23/sigreturn/">上回</a>, 我们介绍了<code>信号栈帧</code>, 也就是下面这个东西:</p>
+<span id="more"></span>
+
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/srop-stack.png" alt="进入信号处理函数时栈的结构"></p>
+<p>上节说的太宽泛, 这次我们将更细节地讨论这件事。</p>
+<h3 id="内核压入的栈帧-哪些信息才是有用的"><a href="#内核压入的栈帧-哪些信息才是有用的" class="headerlink" title="内核压入的栈帧, 哪些信息才是有用的?"></a>内核压入的栈帧, 哪些信息才是有用的?</h3><p>上节提到, 内核要插入信号处理函数时, 其实只是将一些必要的上下文存储在了信号处理函数的栈上。这些信息就是如下的结构体:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">ucontext_t</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">int</span> uc_flags;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ucontext_t</span> *<span class="title">uc_link</span>;</span></span><br><span class="line">    <span class="type">stack_t</span> uc_stack;</span><br><span class="line">    <span class="type">mcontext_t</span> uc_mcontext;</span><br><span class="line">    <span class="type">sigset_t</span> uc_sigmask;</span><br><span class="line">&#125; <span class="type">ucontext_t</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>uc_mcontext</code>就是所有的寄存器上下文(包括浮点环境的所有上下文), 它其实是<code>struct sigcontext</code>的等价结构。但是前者晦涩难读, 考虑到可读性, 我们一般将其转化为<code>struct sigcontext</code>。下面的程序打印了这个寄存器上下文。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ucontext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">handler</span><span class="params">(<span class="type">int</span> signo, <span class="type">siginfo_t</span> *info, <span class="type">ucontext_t</span> *ctx)</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigcontext</span> *<span class="title">sigctx</span> =</span> (<span class="type">void</span>*)&amp;ctx-&gt;uc_mcontext;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;cr2);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;cs);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;eflags);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;err);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;__fpstate_word);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;fs);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;gs);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;oldmask);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r10);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r11);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r12);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r13);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r14);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r15);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r8);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;r9);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rax);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rbx);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rcx);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rdi);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rdx);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rip);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rsi);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;rsp);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu\n&quot;</span>, sigctx-&gt;trapno);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// set stack for signal handler</span></span><br><span class="line">    <span class="type">stack_t</span> s;</span><br><span class="line">    s.ss_flags = <span class="number">0</span>;</span><br><span class="line">    s.ss_size = <span class="number">40000</span>;</span><br><span class="line">    s.ss_sp = <span class="built_in">malloc</span>(<span class="number">40000</span>);</span><br><span class="line">    sigaltstack(&amp;s, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// set up signal handler</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">act</span>;</span></span><br><span class="line">    act.sa_flags = SA_SIGINFO|SA_ONSTACK;</span><br><span class="line">    sigfillset(&amp;act.sa_mask);</span><br><span class="line">    act.sa_sigaction = (<span class="type">void</span> (*)(<span class="type">int</span>, <span class="type">siginfo_t</span>*,<span class="type">void</span>*))handler;</span><br><span class="line">    sigaction(SIGINT, &amp;act, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* output:</span></span><br><span class="line"><span class="comment">    省略, 这个输出没啥意义, 就是一些上下文信息</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+
+<p>我们来说明<code>struct sigaction</code>里面的字段意义。<code>oldmask</code>保存了之前的信号屏蔽字, 用于恢复中断之前的信号屏蔽字。<code>rax~rdx, r8~r15, fs, gs, rsi, rsp, eflags</code>这些寄存器不必多说, 它们都是被程序广泛使用的寄存器, 必须得恢复。<code>rip</code>保存了之前的PC(就是之前指令的地址), 用于恢复到之前被中断的地方。<code>rsp</code>保存了中断前的栈指针, 用于恢复栈环境。</p>
+<p>关于<code>cs</code>寄存器我想说的是, 一个用户态程序, 在<strong>任何时候</strong>都不应该修改<code>cs</code>(<code>gs</code>,<code>fs</code>, <code>ss</code>…等所有段寄存器), 一个进程的<code>cs</code>寄存器永远是<code>0x33</code>。然而, 我们却可以使用<code>jmp cs:rip</code>这样的指令修改<code>cs</code>。但如果这么做了, 那么cpu在执行下一行代码的时候, 就将发生权限错误(如果好奇, 可以学习下cpu的权限保护机制, 笔者对64位的权限机制知之甚少), 内核就会发送相关信号给程序。</p>
+<p>这里的<code>cr2</code>是干嘛的? 难道他们也需要被恢复? 答案是否定的, 我们不需要恢复它们, 而且用户态程序也没有权限写它。下面是一个demo, 尝试写<code>cr2</code>寄存器:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    __asm__ __volatile(</span><br><span class="line">        <span class="string">&quot;mov $0, %%rax\n\t&quot;</span></span><br><span class="line">        <span class="string">&quot;mov %%rax, %%cr2&quot;</span></span><br><span class="line">        :</span><br><span class="line">        :</span><br><span class="line">        :</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// &#x27;./main&#x27; terminated by signal SIGSEGV (Address boundary error)</span></span><br></pre></td></tr></table></figure>
+
+<p>为什么没法写? 因为用户程序在<code>ring3</code>低特权级。在尝试执行这个指令时, cpu将提供保护机制, 此时发生一个异常, 由内核接管一切。接着内核将发送信号给程序。想想, 当我们的程序除0时, 也是由cpu引发异常, 然后发送一个特定的信号, 它们的原理是一样的。区别在于, 写<code>cr0</code>是由于权限引发的cpu异常, 除0是由于运算逻辑引发的cpu异常, 它们其实很类似。</p>
+<p>所以这里我有个疑问, 为什么要把<code>cs</code>和<code>cr2</code>这样我们明显没法改(或者说不应该改)的东西放在<code>sigcontext</code>里? 我觉得这是不必要的, 如果有同学知道, 求求告诉我一下。</p>
+<p>在发送段错误时, <code>cr2</code>寄存器保存最后一次出现页故障时访问的地址。我们可以从<code>sigcontext</code>里面拿出这个<code>cr2</code>的信息。也可以用<code>siginfo_t</code>中保存的信息获得这个, 见下面的代码:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ucontext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">handler</span><span class="params">(<span class="type">int</span> signo, <span class="type">siginfo_t</span> *info, <span class="type">ucontext_t</span> *ctx)</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigcontext</span> *<span class="title">sigctx</span> =</span> (<span class="type">void</span>*)&amp;ctx-&gt;uc_mcontext;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%p %p\n&quot;</span>, (*info).si_addr, sigctx-&gt;cr2);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// set stack for signal handler</span></span><br><span class="line">    <span class="type">stack_t</span> s;</span><br><span class="line">    s.ss_flags = <span class="number">0</span>;</span><br><span class="line">    s.ss_size = <span class="number">40000</span>;</span><br><span class="line">    s.ss_sp = <span class="built_in">malloc</span>(<span class="number">40000</span>);</span><br><span class="line">    sigaltstack(&amp;s, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// set up signal handler</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">act</span>;</span></span><br><span class="line">    act.sa_flags = SA_SIGINFO|SA_ONSTACK;</span><br><span class="line">    sigfillset(&amp;act.sa_mask);</span><br><span class="line">    act.sa_sigaction = (<span class="type">void</span> (*)(<span class="type">int</span>, <span class="type">siginfo_t</span>*,<span class="type">void</span>*))handler;</span><br><span class="line">    sigaction(SIGSEGV, &amp;act, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    *(<span class="type">char</span>*)(<span class="number">0x123</span>) = <span class="string">&#x27;c&#x27;</span>;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// output:</span></span><br><span class="line"><span class="comment">// 循环输出0x123 0x123</span></span><br></pre></td></tr></table></figure>
+
+<p><code>trapno</code>, <code>err</code>, 这个两个字段与硬件中断有关, 来自上一次硬件中断的信息, 也不是被恢复的信息(这两个字段也许对高手有用, 但我不知道有什么作用, 如果有人知道, 求求告诉我一下)。</p>
+<hr>
+<p>上面说的都是<code>sigcontext</code>, 但那只是内核压入的一部分, 它压入的全部被定义在了<code>ucontext_t</code>里面, 里面除了<code>uc_mcontext</code>还有好几个字段, 它们是干嘛的? 答案是, 它们没有任何卵用。这些信息都是冗余信息, 内核并不搭理它们, 只是将它们保存了下来, 下次信号中断时, 又将它们填入。</p>
+<h3 id="重头戏-高端操作-利用栈溢出在信号处理函数中原子跳转-设置信号屏蔽字"><a href="#重头戏-高端操作-利用栈溢出在信号处理函数中原子跳转-设置信号屏蔽字" class="headerlink" title="重头戏, 高端操作, 利用栈溢出在信号处理函数中原子跳转+设置信号屏蔽字"></a>重头戏, 高端操作, 利用栈溢出在信号处理函数中原子跳转+设置信号屏蔽字</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ucontext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;malloc.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;alloca.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">move_here</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;芜湖\n&quot;</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;起飞\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">gadget</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">asm</span>(<span class="string">&quot;mov $0xf,%rax\n&quot;</span>);</span><br><span class="line">    <span class="keyword">asm</span>(<span class="string">&quot;retq\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">ucontext_t</span> uctx;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">sigreturnto</span><span class="params">(<span class="type">void</span> (*dest)(), <span class="type">void</span> *stack_top)</span> &#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> *ret;</span><br><span class="line">    bzero(&amp;uctx, <span class="keyword">sizeof</span>(<span class="type">ucontext_t</span>));</span><br><span class="line">    uctx.uc_mcontext.gregs[REG_RIP] = dest;</span><br><span class="line">    uctx.uc_mcontext.gregs[REG_RSP] = stack_top;</span><br><span class="line">    uctx.uc_mcontext.gregs[REG_CSGSFS] = <span class="number">0x33</span>;</span><br><span class="line">    ret = (<span class="type">unsigned</span> <span class="type">long</span>*)&amp;ret + <span class="number">2</span>;</span><br><span class="line">    *ret = gadget + <span class="number">4</span>;</span><br><span class="line">    *(ret+<span class="number">1</span>) = dest;</span><br><span class="line">    <span class="built_in">memcpy</span>(ret + <span class="number">2</span>, &amp;uctx, <span class="keyword">sizeof</span>(<span class="type">ucontext_t</span>));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    sigreturnto(move_here, <span class="built_in">malloc</span>(<span class="number">4096</span>)+<span class="number">4096</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里利用了栈溢出的一个小技巧, 通过精心设计的栈溢出设置了栈帧, 并且调用到了15号系统调用。这种做法其实是一种攻击手段, 被称为<code>sigreturn-oriented programming(SROP)</code>, 如果对这种手段感兴趣, 参考资料提供了几个链接供查阅学习。</p>
+<p>下面的代码更为直观, 不采用栈溢出的这种高端操作:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ucontext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;malloc.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">sigreturn_to</span><span class="params">(<span class="type">ucontext_t</span> *ctx)</span> &#123;</span><br><span class="line">    <span class="keyword">register</span> <span class="type">void</span> *rsp __asm__(<span class="string">&quot;rsp&quot;</span>);</span><br><span class="line">    rsp -= <span class="keyword">sizeof</span>(<span class="type">ucontext_t</span>);</span><br><span class="line">    *(<span class="type">ucontext_t</span>*)rsp = *ctx;</span><br><span class="line">    __asm__ __volatile__(</span><br><span class="line">        <span class="string">&quot;mov $15, %%rax\n\t&quot;</span></span><br><span class="line">        <span class="string">&quot;syscall&quot;</span></span><br><span class="line">        :</span><br><span class="line">        :</span><br><span class="line">        :</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">come_here</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;123\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">void</span> *stack_top = <span class="built_in">malloc</span>(<span class="number">4096</span>) + <span class="number">4096</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">ucontext_t</span> ctx;</span><br><span class="line">    bzero(&amp;ctx, <span class="keyword">sizeof</span>(<span class="type">ucontext_t</span>));</span><br><span class="line">    ctx.uc_mcontext.gregs[REG_RIP] = come_here;</span><br><span class="line">    ctx.uc_mcontext.gregs[REG_CSGSFS] = <span class="number">0x33</span>;</span><br><span class="line">    ctx.uc_mcontext.gregs[REG_RSP] = stack_top;</span><br><span class="line"></span><br><span class="line">    sigreturn_to(&amp;ctx);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="你可以用它做什么"><a href="#你可以用它做什么" class="headerlink" title="你可以用它做什么?"></a>你可以用它做什么?</h3><p>玩。</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/play.png"></p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
+<li><a target="_blank" rel="noopener" href="https://www.stormshield.com/news/playing-with-signals-an-overview-on-sigreturn-oriented-programming/">sigreturn-orient攻击概览, sigreturn原理探究</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.halolinux.us/process-manager/restarting-an-interrupted-system-call.html">被中断的系统调用如何重启?</a></li>
+<li><a target="_blank" rel="noopener" href="https://f002.backblazeb2.com/file/sec-news-backup/files/writeup/www.2cto.com/_Article_201512_452080_html/index.html">SROP攻击原理探究</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/587279257">写一个倒着跑的x86_64程序</a></li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tags-none-link" href="/tags/security/" rel="tag">security</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Markity&#39;s Notes">
+<meta property="og:url" content="http://example.com/page/3/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="Markity">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content">
+
+
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/05/oauth2/">
+  <time datetime="2023-03-05T16:57:55.000Z">
+    2023-03-05
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/05/oauth2/">OAuth2设计上的思考以及CSRF攻击概述</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="OAuth2授权码模式的基本授权流程"><a href="#OAuth2授权码模式的基本授权流程" class="headerlink" title="OAuth2授权码模式的基本授权流程"></a>OAuth2授权码模式的基本授权流程</h3><p>此处以github第三方认证为例, 说明如何通过github的OAuth2服务来以github的身份登陆网站A</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/05/oauth2/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/27/seg64/">
+  <time datetime="2023-02-27T16:57:55.000Z">
+    2023-02-27
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/02/27/seg64/">linux的线程私有数据以及编译器stack_protector选项</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="fs和gs提供per-task数据"><a href="#fs和gs提供per-task数据" class="headerlink" title="fs和gs提供per-task数据"></a>fs和gs提供per-task数据</h3><p>这两个寄存器被用来访问一些线程私有数据, 其中<code>fs</code>被用户态程序使用, <code>gs</code>被内核态使用。应该知道, 在使用pthread时, 可以通过<code>pthread_self()</code>拿到当前线程的线程id, 其实就是从<code>fs</code>里面拿数据。至于为什么能这么做, 可以参考<a target="_blank" rel="noopener" href="https://markity.github.io/2023/03/18/thread_local/">这篇文章</a>, 详细介绍了<code>linux</code>实现per-task数据的原理。作为应用, 我们只需通过glibc间接的访问<code>errbo</code>和<code>pthread_self()</code>即可。例如看glibc的代码:</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/02/27/seg64/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/26/sigreturn2/">
+  <time datetime="2023-02-26T16:57:55.000Z">
+    2023-02-26
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/02/26/sigreturn2/">信号处理函数是如何返回的(2)?</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言:"></a>前言:</h3><p>书接<a target="_blank" rel="noopener" href="https://markity.github.io/2023/02/23/sigreturn/">上回</a>, 我们介绍了<code>信号栈帧</code>, 也就是下面这个东西:</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/02/26/sigreturn2/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/23/sigreturn/">
+  <time datetime="2023-02-23T16:57:55.000Z">
+    2023-02-23
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/02/23/sigreturn/">信号处理函数是如何返回的(1)?</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="从程序入手-信号中断的基本逻辑"><a href="#从程序入手-信号中断的基本逻辑" class="headerlink" title="从程序入手, 信号中断的基本逻辑"></a>从程序入手, 信号中断的基本逻辑</h3><p>下面的程序说明了一个基本的信号处理函数如何建立:</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/02/23/sigreturn/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/18/co/">
+  <time datetime="2023-02-18T16:57:55.000Z">
+    2023-02-18
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/02/18/co/">C语言实现基于信号的抢占式协程调度(单线程版本)</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言-linux调度以及最小调度单位"><a href="#前言-linux调度以及最小调度单位" class="headerlink" title="前言: linux调度以及最小调度单位"></a>前言: linux调度以及最小调度单位</h3><p>我们知道, linux能调度多个不同的进程。假如现在有一台单核心的cpu, 在cpu上的linux系统正在运行多个进程, 虽然某个时刻只能有一个进程正在运行, 但由于linux的调度能力(不同进程进行切换), 我们可以感知到好像有多个进程在同时运行。这种调度机制源自linux系统能在一个进程运行一段时间后执行上下文切换, 让另一个进程得以运行。</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/02/18/co/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/17/d-stack/">
+  <time datetime="2023-02-17T16:57:55.000Z">
+    2023-02-17
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/02/17/d-stack/">[线程杂谈]pthread实现线程动态栈</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="前言-栈的基本逻辑"><a href="#前言-栈的基本逻辑" class="headerlink" title="前言: 栈的基本逻辑"></a>前言: 栈的基本逻辑</h2><p>进行函数调用时, 会将当前指令处的地址压入(<code>push</code>)到栈顶, 从函数返回时, 从栈顶弹出(<code>pop</code>)返回地址, 并跳转过去, 这便是栈的一个使用方法。其次, 在c语言中, 声明一个局部变量, 也会将其压入栈顶(但不是一定的, 我们也可以声明一个寄存器变量, 此时它就代表一个寄存器而不占用栈空间)。然而过深的函数调用会使
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/02/17/d-stack/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/16/hello-world/">
+  <time datetime="2023-02-16T16:57:55.000Z">
+    2023-02-16
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/02/16/hello-world/">Hello World</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h1 id="你好世界-这是一级标题"><a href="#你好世界-这是一级标题" class="headerlink" title="你好世界, 这是一级标题"></a>你好世界, 这是一级标题</h1><p>这是我的第一篇文章, 这是普通文本</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/02/16/hello-world/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+
+  <nav id="pagination">
+  
+    <a href="/page/2/" class="prev">Prev</a>
+  
+  
+  <div class="clearfix"></div>
+</nav>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

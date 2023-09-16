@@ -1,0 +1,192 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>压缩解压链接文件和特殊设备文件 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="前言最近扒了下docker里rootfs的压缩包, 发现里面除了普通文件, 目录以外还有软链接(Symbolic Link)以及硬链接(Hard Link)。此外, 在go的tar库里面, 我还发现了linux设备的文件类型, 比如fifo(命名管道)和char(字符设备文件)。本文来谈谈如何压缩和解压这些奇怪的文件类型。">
+  
+  <meta name="description" content="前言最近扒了下docker里rootfs的压缩包, 发现里面除了普通文件, 目录以外还有软链接(Symbolic Link)以及硬链接(Hard Link)。此外, 在go的tar库里面, 我还发现了linux设备的文件类型, 比如fifo(命名管道)和char(字符设备文件)。本文来谈谈如何压缩和解压这些奇怪的文件类型。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="压缩解压链接文件和特殊设备文件">
+<meta property="og:url" content="http://example.com/2023/05/28/dezip/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="前言最近扒了下docker里rootfs的压缩包, 发现里面除了普通文件, 目录以外还有软链接(Symbolic Link)以及硬链接(Hard Link)。此外, 在go的tar库里面, 我还发现了linux设备的文件类型, 比如fifo(命名管道)和char(字符设备文件)。本文来谈谈如何压缩和解压这些奇怪的文件类型。">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-05-28T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-06-08T00:14:46.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="没用的冷知识">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/05/28/dezip/">
+  <time datetime="2023-05-28T16:57:55.000Z">
+    2023-05-28
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">压缩解压链接文件和特殊设备文件</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近扒了下docker里rootfs的压缩包, 发现里面除了普通文件, 目录以外还有软链接(Symbolic Link)以及硬链接(Hard Link)。此外, 在go的tar库里面, 我还发现了linux设备的文件类型, 比如fifo(命名管道)和char(字符设备文件)。本文来谈谈如何压缩和解压这些奇怪的文件类型。</p>
+<span id="more"></span>
+
+<h3 id="软链接"><a href="#软链接" class="headerlink" title="软链接"></a>软链接</h3><p>软链接又叫符号链接, 它只是文件或文件夹的路径字符串, 即使对应的文件或文件夹不存在也没关系, 下面是一些演示:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">ln</span> -s /not/exists ./mylink</span><br><span class="line">$ <span class="built_in">ls</span> -al</span><br><span class="line">drwxr-xr-x  2 markity markity 4096 May 28 10:09 ./</span><br><span class="line">drwx------ 19 markity markity 4096 May 28 09:32 ../</span><br><span class="line">lrwxrwxrwx  1 markity markity   11 May 28 10:09 mylink -&gt; /not/exists</span><br><span class="line">$ <span class="built_in">cd</span> mylink</span><br><span class="line"><span class="built_in">cd</span>: <span class="string">&#x27;/home/markity/Desktop/mylink&#x27;</span> is a broken symbolic <span class="built_in">link</span> to <span class="string">&#x27;/not/exists&#x27;</span></span><br><span class="line">$ <span class="built_in">cat</span> mylink</span><br><span class="line"><span class="built_in">cat</span>: mylink: No such file or directory</span><br><span class="line">$ <span class="built_in">ln</span> -s /usr/lib ./mylink2</span><br><span class="line">$ <span class="built_in">cd</span> mylink2</span><br><span class="line">$ <span class="built_in">pwd</span></span><br><span class="line">/home/markity/Desktop/mylink2</span><br></pre></td></tr></table></figure>
+
+<p>符号链接本身是一个文件, 但是里面的内容标识了它指向的一个路径, 在linux中打开文件或目录的接口中都可以指定是否“跟随(follow)”符号链接。如果我们选择不跟随符号链接, 那么open符号链接就会报错返回ELOOP。</p>
+<p>先创建一个软链接:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> myfile</span><br><span class="line">some content <span class="keyword">in</span> this file</span><br><span class="line">$ <span class="built_in">link</span> -s myfile mylink</span><br><span class="line">$ <span class="built_in">ls</span> -al</span><br><span class="line">drwxr-xr-x 2 markity markity 4096 May 28 11:55 ./</span><br><span class="line">drwxr-xr-x 4 markity markity 4096 May 28 11:53 ../</span><br><span class="line">-rw-r--r-- 1 markity markity    0 May 28 11:55 myfile</span><br><span class="line">lrwxrwxrwx 1 markity markity    6 May 28 11:55 mylink -&gt; myfile</span><br></pre></td></tr></table></figure>
+
+<p>用下面的方法可以判断一个文件并不是符号链接, 如果是符号链接则告知, 不是则打印出文件的所有内容:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;io&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;syscall&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	file, err := os.OpenFile(<span class="string">&quot;mylink&quot;</span>, os.O_RDONLY|syscall.O_NOFOLLOW, <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">if</span> err.(*os.PathError).Unwrap() == syscall.ELOOP &#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;这是符号链接&quot;</span>)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	bs, err := io.ReadAll(file)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	fmt.Println(<span class="type">string</span>(bs))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>既然我们现在能判断一个文件是否是软链接了, 要进行压缩, 我们需要知道怎么读取一个软链接的引用路径, 用下面这个接口就行了:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这个接口在os包里面</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Readlink</span><span class="params">(name <span class="type">string</span>)</span></span> (<span class="type">string</span>, <span class="type">error</span>);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>在linux中, 使用chmod试图改变符号链接的权限时, chmod将follow link, 试图改变指向的文件的权限。此外注意我们不用关心软链接文件本身的权限, 它永远是777的, 没有需求也没有必要修改软链接本身的权限。要做权限管理, 应该直接修改文件本身访问权限设置, 而不是设法改变软链接文件的权限。</p>
+</blockquote>
+<h3 id="硬链接"><a href="#硬链接" class="headerlink" title="硬链接"></a>硬链接</h3><p>硬链接则很不相同, 它不仅仅代表一个符号, 它代表的是文件本体, 与所有其它硬链接共享底层二进制数据, 或者说它根本不仅仅是一个链接。当创建文件a的硬链接b, 那么a和b此时都是等价的文件, 它们没有任何不同, 单独删除a或单独删除b都不能让此文件的本体从磁盘中消失。</p>
+<p>只有某个文件的所有硬链接消失, 对应的文件存储空间才会从磁盘中消失。因此我认为没有硬链接和本体文件之分, 硬链接就是用来创建某个文件对象的同义词的。</p>
+<p>如果a和b是同一文件的硬链接, 我们则认为它们就是同一个文件, 编辑a也能观察到b发生同样的变化。需要注意的是不能创建对文件夹的硬链接, 这是一个设计问题, 想想如果允许这么做, 那么必然会导致出现环形的目录结构, 这是abnormal的(这个观点是我从apue中抄来的)。</p>
+<blockquote>
+<p>在linux中, 硬链接关联的所有文件的权限信息都是共享的, chmod, chown一个文件会对它的硬链接造成同样的影响。</p>
+</blockquote>
+<h3 id="tar文件中的硬链接"><a href="#tar文件中的硬链接" class="headerlink" title="tar文件中的硬链接"></a>tar文件中的硬链接</h3><p>我扒了一下docker ubuntu22.04的rootfs压缩包, 里面大有乾坤, 我发现里面有四种文件类型: dir, regular file, 软链接和硬链接。下面的程序可以用来检测一般的文件类型。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;archive/tar&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;io&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	tarFile, err := os.OpenFile(<span class="string">&quot;./ubuntu2204.tar&quot;</span>, os.O_RDONLY, <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	blockFlag := <span class="literal">false</span></span><br><span class="line">	charFlag := <span class="literal">false</span></span><br><span class="line">	contFlag := <span class="literal">false</span></span><br><span class="line">	dirFlag := <span class="literal">false</span></span><br><span class="line">	fifoFlag := <span class="literal">false</span></span><br><span class="line">	linkFlag := <span class="literal">false</span></span><br><span class="line">	linkSymFlag := <span class="literal">false</span></span><br><span class="line">	regFlag := <span class="literal">false</span></span><br><span class="line"></span><br><span class="line">	tarReader := tar.NewReader(tarFile)</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		header, err := tarReader.Next()</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="keyword">if</span> err == io.EOF &#123;</span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">switch</span> header.Typeflag &#123;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeBlock:</span><br><span class="line">			<span class="keyword">if</span> !blockFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;block&quot;</span>)</span><br><span class="line">				blockFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeChar:</span><br><span class="line">			<span class="keyword">if</span> !charFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;char&quot;</span>)</span><br><span class="line">				charFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeCont:</span><br><span class="line">			<span class="keyword">if</span> !contFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;cont&quot;</span>)</span><br><span class="line">				contFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeDir:</span><br><span class="line">			<span class="keyword">if</span> !dirFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;dir&quot;</span>)</span><br><span class="line">				dirFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeFifo:</span><br><span class="line">			<span class="keyword">if</span> !fifoFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;fifo&quot;</span>)</span><br><span class="line">				fifoFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeLink:</span><br><span class="line">			<span class="keyword">if</span> !linkFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;hard link&quot;</span>, header.Name, header.Linkname)</span><br><span class="line">				linkFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeSymlink:</span><br><span class="line">			<span class="keyword">if</span> !linkSymFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;symbolic link&quot;</span>, header.Name, header.Linkname)</span><br><span class="line">				linkSymFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">case</span> tar.TypeReg:</span><br><span class="line">			<span class="keyword">if</span> !regFlag &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;regular file&quot;</span>)</span><br><span class="line">				regFlag = <span class="literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">default</span>:</span><br><span class="line">			fmt.Println(<span class="string">&quot;???&quot;</span>)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* output:</span></span><br><span class="line"><span class="comment">symbolic link bin usr/bin</span></span><br><span class="line"><span class="comment">dir</span></span><br><span class="line"><span class="comment">regular file</span></span><br><span class="line"><span class="comment">hard link usr/bin/perl5.34.0 usr/bin/perl</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+
+<p>显然, 我们在压缩一个目录下的一堆文件的时候, 需要考虑要硬链接这个问题, 它们共享相同的底层数据, 牵一发而动全身。如果压缩前两个文件是硬链接共享底层数据, 压缩并解压后它们就毫无关系了, 这显然很abnormal吧? 当然tar命令做的是正确的, 它在压缩时就创建了硬链接。</p>
+<p>我的疑问是: 进行tar命令压缩的时候会产生硬链接, 这个程序是如何区分不同文件是同一个对象的硬链接的呢? 我认为只有理解了这一点才能自己实现正确的压缩, 这就是我们这小节要探究的点。</p>
+<p>ok, 这点很简单, 在linux的文件系统中, 每个目录或文件都有自己独有的inode, 可以把它理解为文件唯一标识。咱们通过一个表来记录这个标识, 每次压缩文件时先判断之前表里面是否已经存了这个inode, 如果存在, 那么就记录为硬链接。下面给个获得文件inode的demo:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;syscall&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> info syscall.Stat_t</span><br><span class="line">	syscall.Stat(<span class="string">&quot;./main.go&quot;</span>, &amp;info)</span><br><span class="line"></span><br><span class="line">	fmt.Println(info.Ino)</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果已经有文件的fd, 那么可以用另外一个接口:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;syscall&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	f, err := os.OpenFile(<span class="string">&quot;./main.go&quot;</span>, os.O_RDONLY, <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> info syscall.Stat_t</span><br><span class="line">	syscall.Fstat(<span class="type">int</span>(f.Fd()), &amp;info)</span><br><span class="line">	fmt.Println(info.Ino)</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="其它文件类型"><a href="#其它文件类型" class="headerlink" title="其它文件类型"></a>其它文件类型</h3><p>除了目录&#x2F;文件&#x2F;软链接&#x2F;硬链接这些常规文件类型, linux下还有设备文件这种东西。那么在压缩的时候咱们就得考虑要不要把它们写进去, 如果压缩包里面有这些特殊文件, 解压时我们就需要将这些特殊文件自行创建出来。那么怎么做呢? 下面给两个例子, 一个是压缩得到某个文件的主次设备号, 一个是解压时创建特殊的设备文件, 通过这两个例子就能掌握压缩&#x2F;解压设备文件的方法。</p>
+<p>压缩:</p>
+<p>在压缩的时候, 我们得知道某个文件是否是特殊的设备文件, 并且拿到它的主次设备号, 怎么做? 答案是syscall.Stat, 下面给个demo, 用于判断任意的文件类型:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;syscall&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(os.Args) != <span class="number">2</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="string">&quot;usage: %s FILE_PATH\n&quot;</span>, os.Args[<span class="number">0</span>])</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> info syscall.Stat_t</span><br><span class="line">	err := syscall.Lstat(os.Args[<span class="number">1</span>], &amp;info)</span><br><span class="line">	<span class="keyword">if</span> err == syscall.ELOOP &#123;</span><br><span class="line">		fmt.Println(<span class="string">&quot;soft link&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err == syscall.ENOENT &#123;</span><br><span class="line">		fmt.Println(<span class="string">&quot;不存在&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">switch</span> info.Mode &amp; syscall.S_IFMT &#123;</span><br><span class="line">	<span class="keyword">case</span> syscall.S_IFBLK:</span><br><span class="line">		fmt.Println(<span class="string">&quot;block device&quot;</span>)</span><br><span class="line">	<span class="keyword">case</span> syscall.S_IFCHR:</span><br><span class="line">		fmt.Println(<span class="string">&quot;char device&quot;</span>)</span><br><span class="line">	<span class="keyword">case</span> syscall.S_IFDIR:</span><br><span class="line">		fmt.Println(<span class="string">&quot;dir&quot;</span>)</span><br><span class="line">	<span class="keyword">case</span> syscall.S_IFIFO:</span><br><span class="line">		fmt.Println(<span class="string">&quot;fifo&quot;</span>)</span><br><span class="line">	<span class="keyword">case</span> syscall.S_IFLNK:</span><br><span class="line">		fmt.Println(<span class="string">&quot;soft link&quot;</span>)</span><br><span class="line">	<span class="keyword">case</span> syscall.S_IFREG:</span><br><span class="line">		fmt.Println(<span class="string">&quot;regular file&quot;</span>)</span><br><span class="line">	<span class="keyword">case</span> syscall.S_IFSOCK:</span><br><span class="line">		fmt.Println(<span class="string">&quot;socket file&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解压:</p>
+<p>在解压过程中, 我们需要能够创建各种文件类型, 下面进行方法列举:</p>
+<ul>
+<li>普通文件: os.OpenFile</li>
+<li>文件夹: os.Mkdir</li>
+<li>硬链接: os.Link</li>
+<li>软链接: os.Symlink</li>
+<li>块设备文件: syscall.Mknod</li>
+<li>字符设备文件: syscall.Mknod</li>
+<li>FIFO: syscall.Mkfifo</li>
+<li>socket文件: 稍显复杂, 下面用代码来说明</li>
+</ul>
+<blockquote>
+<p>正确的解压方式是: 先把除了软硬链接的所有文件创建写入完毕后, 再创建软硬链接。在go语言中, 可以用一个map存储软链接的name和linkname, 用一个map存储硬链接的name和linkname。等其它文件解压完毕后再遍历之前建立的map创建软硬链接。</p>
+</blockquote>
+<p>普通文件&#x2F;文件夹&#x2F;软链接&#x2F;硬链接咱们就不谈了。下面给个例子来创建字符设备文件, 比如&#x2F;dev&#x2F;null:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;syscall&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">MakeDev</span><span class="params">(major <span class="type">uint32</span>, minor <span class="type">uint32</span>)</span></span> <span class="type">uint32</span> &#123;</span><br><span class="line">	<span class="keyword">var</span> dev <span class="type">uint32</span></span><br><span class="line">	dev = (major &amp; <span class="number">0x00000fff</span>) &lt;&lt; <span class="number">8</span></span><br><span class="line">	dev |= (major &amp; <span class="number">0xfffff000</span>) &lt;&lt; <span class="number">32</span></span><br><span class="line">	dev |= (minor &amp; <span class="number">0x000000ff</span>) &lt;&lt; <span class="number">0</span></span><br><span class="line">	dev |= (minor &amp; <span class="number">0xffffff00</span>) &lt;&lt; <span class="number">12</span></span><br><span class="line">	<span class="keyword">return</span> dev</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> err := syscall.Mknod(<span class="string">&quot;./mynull&quot;</span>, <span class="number">0666</span>|syscall.S_IFCHR, <span class="type">int</span>(MakeDev(<span class="number">1</span>, <span class="number">3</span>))); err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(err)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再给个例子创建socket文件, 这个稍微复杂一点:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;net&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	net.DialUnix(<span class="string">&quot;unix&quot;</span>, &amp;net.UnixAddr&#123;Name: <span class="string">&quot;./mysocket&quot;</span>, Net: <span class="string">&quot;unix&quot;</span>&#125;, &amp;net.UnixAddr&#123;Name: <span class="string">&quot;./mysocket&quot;</span>, Net: <span class="string">&quot;unix&quot;</span>&#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>创建socket的方式其实在c语言里面的思路是: 创建socket并bind, bind就会自动创建socket文件。</p>
+</blockquote>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/%E6%B2%A1%E7%94%A8%E7%9A%84%E5%86%B7%E7%9F%A5%E8%AF%86/" rel="tag">没用的冷知识</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

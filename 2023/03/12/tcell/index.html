@@ -1,0 +1,168 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>Golang库推荐: tcell实现对终端的坐标式绘图 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="引入话题vim无疑是linux玩家必备的编辑工具, 即使在命令行模式下(假如你现在在使用linux桌面版, 现在你可以按下CTRL+ALT+F2进入命令行模式, 按CTRL+ALT+F1切回), 也能使用这样的编辑工具。它能够接管整个屏幕, 并将文字显示在上面。那么怎么实现这种”接管”整个终端屏幕的软件呢?在golang下就提供了tcell这样方便的工具, 使得我们能以坐标系的方式操纵整个终端屏幕">
+  
+  <meta name="description" content="引入话题vim无疑是linux玩家必备的编辑工具, 即使在命令行模式下(假如你现在在使用linux桌面版, 现在你可以按下CTRL+ALT+F2进入命令行模式, 按CTRL+ALT+F1切回), 也能使用这样的编辑工具。它能够接管整个屏幕, 并将文字显示在上面。那么怎么实现这种”接管”整个终端屏幕的软件呢?在golang下就提供了tcell这样方便的工具, 使得我们能以坐标系的方式操纵整个终端屏幕">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang库推荐: tcell实现对终端的坐标式绘图">
+<meta property="og:url" content="http://example.com/2023/03/12/tcell/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="引入话题vim无疑是linux玩家必备的编辑工具, 即使在命令行模式下(假如你现在在使用linux桌面版, 现在你可以按下CTRL+ALT+F2进入命令行模式, 按CTRL+ALT+F1切回), 也能使用这样的编辑工具。它能够接管整个屏幕, 并将文字显示在上面。那么怎么实现这种”接管”整个终端屏幕的软件呢?在golang下就提供了tcell这样方便的工具, 使得我们能以坐标系的方式操纵整个终端屏幕">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-03-12T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-05-21T16:20:02.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="太好玩了">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="terminal">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/12/tcell/">
+  <time datetime="2023-03-12T16:57:55.000Z">
+    2023-03-12
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">Golang库推荐: tcell实现对终端的坐标式绘图</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="引入话题"><a href="#引入话题" class="headerlink" title="引入话题"></a>引入话题</h3><p>vim无疑是linux玩家必备的编辑工具, 即使在命令行模式下(假如你现在在使用linux桌面版, 现在你可以按下CTRL+ALT+F2进入命令行模式, 按CTRL+ALT+F1切回), 也能使用这样的编辑工具。它能够接管整个屏幕, 并将文字显示在上面。那么怎么实现这种”接管”整个终端屏幕的软件呢?在golang下就提供了tcell这样方便的工具, 使得我们能以坐标系的方式操纵整个终端屏幕。</p>
+<span id="more"></span>
+
+<p>这个库是跨平台的, 不同于c语言的<code>ncurses</code>, 它的api更友好, 且跨平台支持效果很好。</p>
+<p>go的ncurses移植(<code>github.com/rthornton128/goncurses</code>)支持很垃圾, 究其原因, 是因为go接管了所有信号, 而这个c库设置了信号处理函数, 导致此库的某些接口效果很诡异。因此在任何情况下都<u>不要使用</u>goncurses。</p>
+<h3 id="快速体验"><a href="#快速体验" class="headerlink" title="快速体验"></a>快速体验</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/gdamore/tcell&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	screen, err := tcell.NewScreen()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err := screen.Init(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	screen.SetContent(<span class="number">0</span>, <span class="number">0</span>, <span class="string">&#x27;你&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault)</span><br><span class="line">	screen.SetContent(<span class="number">2</span>, <span class="number">0</span>, <span class="string">&#x27;好&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault)</span><br><span class="line">	screen.SetContent(<span class="number">4</span>, <span class="number">0</span>, <span class="string">&#x27;世&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault)</span><br><span class="line">	screen.SetContent(<span class="number">6</span>, <span class="number">0</span>, <span class="string">&#x27;界&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault)</span><br><span class="line"></span><br><span class="line">	screen.Show()</span><br><span class="line">	time.Sleep(time.Second * <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">	screen.Fini()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个程序将会接管整个终端屏幕, 并在屏幕左上角打印出<code>你好世界</code>, 并且在三秒后程序结束。<code>Show</code>代表刷新屏幕, 使之前的更改展示到屏幕上。<code>Init</code>将修改终端的一些属性, 使得我们的程序能够接管整个屏幕。<code>Fini</code>(finalize的缩写)将还原之前覆写的终端属性, 必须得调用这个, 否则在程序结束后, 终端的行为会不正常。</p>
+<p>关键函数是<code>SetContent</code>, 它能以坐标的形式指定某个单元格的内容。函数签名如下:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tcell.Screen)</span></span>.SetContent(x <span class="type">int</span>, y <span class="type">int</span>, mainc <span class="type">rune</span>, combc []<span class="type">rune</span>, style tcell.Style)</span><br></pre></td></tr></table></figure>
+
+<p>其中左上角第一个单元格的坐标被定义为(0,0), 关于计算机屏幕的坐标系一般都是这样定义的</p>
+<p><code>mainc</code>代表要设置的字符, 可以是任何一个utf8字符(包括占用两个宽度的东亚字符)。<code>combc</code>全称<code>combining character</code>, 这个字符涉及到unicode的细节, 在大多数情况下用不着, 不提它了。</p>
+<p>值得一提的是, 东亚字符占两个宽度, 一个ASCII字符只占一个宽度, 这就是为什么上面的代码设置每个字符都要间隔两个单元。如果要判定一个rune是否为宽字符, 可以用<code>runewidth</code>库。</p>
+<p>程序员要保证不要出现宽字符”交叉”的情况。如果这么写, 是未定义的:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">screen.SetContent(<span class="number">0</span>, <span class="number">0</span>, <span class="string">&#x27;你&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault)</span><br><span class="line">screen.SetContent(<span class="number">1</span>, <span class="number">0</span>, <span class="string">&#x27;好&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault)</span><br></pre></td></tr></table></figure>
+
+<p>默认不显示光标, 如果要操作光标, 调用<code>screen.ShowCurson</code>和<code>screen.HideCurson</code>。</p>
+<h3 id="丰富的色彩和字符特效"><a href="#丰富的色彩和字符特效" class="headerlink" title="丰富的色彩和字符特效"></a>丰富的色彩和字符特效</h3><p>现在的终端效果很厉害, 能让终端产生有颜色的字符, 可以让它带有下划线, 可以让它能够闪烁, 可以粗体&#x2F;斜体。通过SetContent的style参数就能让它有各种各样的效果:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">screen.SetContent(<span class="number">0</span>, <span class="number">0</span>, <span class="string">&#x27;你&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault.Underline(<span class="literal">true</span>))</span><br><span class="line">screen.SetContent(<span class="number">2</span>, <span class="number">0</span>, <span class="string">&#x27;好&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault.Underline(<span class="literal">true</span>).Foreground(tcell.ColorRebeccaPurple))</span><br></pre></td></tr></table></figure>
+
+<p>tcell设计了一个Style结构体, 能够链式地设置效果。tcell.StyleDefault是终端的默认显示配置, 在它的基础上修改需求是很好的实践。</p>
+<h3 id="tcell的事件队列机制"><a href="#tcell的事件队列机制" class="headerlink" title="tcell的事件队列机制"></a>tcell的事件队列机制</h3><p>我们需要能响应终端的一些事件, 比如用户按下按键是最常见的事件, tcell提供了基于事件的消息传递, 需要用户做一个事件循环, 不断poll获取事件</p>
+<p>下面的程序会在用户按下CTRL+C时退出程序, 按下普通的字符时将其显示到(0,0)处:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;github.com/gdamore/tcell&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	screen, err := tcell.NewScreen()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err := screen.Init(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	screen.SetContent(<span class="number">0</span>, <span class="number">0</span>, <span class="string">&#x27;你&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault.Underline(<span class="literal">true</span>))</span><br><span class="line">	screen.SetContent(<span class="number">2</span>, <span class="number">0</span>, <span class="string">&#x27;好&#x27;</span>, <span class="literal">nil</span>, tcell.StyleDefault.Underline(<span class="literal">true</span>).Foreground(tcell.ColorRebeccaPurple))</span><br><span class="line">	screen.Show()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		ev := screen.PollEvent()</span><br><span class="line">		<span class="keyword">switch</span> event := ev.(<span class="keyword">type</span>) &#123;</span><br><span class="line">		<span class="keyword">case</span> *tcell.EventKey:</span><br><span class="line">			<span class="keyword">if</span> event.Key() == tcell.KeyCtrlC &#123;</span><br><span class="line">				<span class="keyword">goto</span> out</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">// 说明用户打的是普通的字符</span></span><br><span class="line">			<span class="keyword">if</span> event.Key() == tcell.KeyRune &#123;</span><br><span class="line">				screen.SetContent(<span class="number">0</span>, <span class="number">0</span>, event.Rune(), <span class="literal">nil</span>, tcell.StyleDefault)</span><br><span class="line">				screen.Show()</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">	screen.Fini()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>PollEvent</code>会阻塞等待一个事件的到来, 事件有以下类型:</p>
+<ul>
+<li>EventResize: 用户的终端改变大小</li>
+<li>EventKey: 用户敲击键盘</li>
+<li>EventInterrupt: 可以用来打断PollEvent的阻塞, 里面可以放置自己的数据类型, 用来实现自定义事件</li>
+<li>EventMouse: 用户鼠标事件</li>
+</ul>
+<p>有的人很好奇, 为毛一个终端, 你还能有EventMouse? 明明我的linux命令行模式连鼠标都没有啊？</p>
+<p>其实这是因为终端模拟器的支持, 我们现在的桌面系统, 是linux的桌面模式, 为了在桌面模式上使用到终端, 有人发明了终端模拟器, 它支持了更多的”能力”, 其中鼠标点击就是其中之一。可以调用<code>screen.HasMouse()</code>检查是否支持鼠标, <code>screen.EnableMouse/DisableMouse</code>开启关闭, 默认是关闭的。</p>
+<p>此外, 用户能够自己发送事件, 它会被<code>PollEvent</code>捕获到。其中<code>PostEvent</code>在事件队列已满的情况下返回<code>ErrEventQFull</code>, <code>PostEventWait</code>在时间队列已满的情况下等待</p>
+<h3 id="优秀的设计模式"><a href="#优秀的设计模式" class="headerlink" title="优秀的设计模式"></a>优秀的设计模式</h3><p>让一个单独的协程负责Poll事件并进行绘图(事件循环), 事件循环里面永远不要包含耗时的操作(否则绘图就阻塞住了)。如果要在事件循环中启动耗时任务, 请开一个新的协程, 执行完毕后发送事件, 永远用事件通信。</p>
+<h3 id="我做的二次开发库推荐"><a href="#我做的二次开发库推荐" class="headerlink" title="我做的二次开发库推荐"></a>我做的二次开发库推荐</h3><p>开过mc服务器的人可能知道, mc服务器的后台控制器很炫酷, 在终端的最后一行专门用来输入指令, 不会被后台满天的刷屏给影响。于是我就设计了这么一个库, 它基于tcell(因此跨平台), 能很容易地实现这样的效果。此库支持了左右滑动(当一行输出太长的时候, 可以按左键右键进行水平滑动), 且在终端屏幕大小改变的时候重绘, 表现依然正常。点击<a target="_blank" rel="noopener" href="https://github.com/markity/Interactive-Console">此处</a>查看。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/golang/" rel="tag">golang</a>, <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tags-none-link" href="/tags/terminal/" rel="tag">terminal</a>, <a class="tags-none-link" href="/tags/%E5%A4%AA%E5%A5%BD%E7%8E%A9%E4%BA%86/" rel="tag">太好玩了</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

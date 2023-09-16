@@ -1,0 +1,474 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Markity&#39;s Notes">
+<meta property="og:url" content="http://example.com/page/2/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="Markity">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content">
+
+
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/18/lua/">
+  <time datetime="2023-03-18T16:57:55.000Z">
+    2023-03-18
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/18/lua/">《lua程序设计》学习记录</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>为了配合redis做原子操作学习lua, 正在读《Lua程序设计》, 此书短小精悍, 应该几日就能读完, 记下这篇笔记便于回忆。正在持续施工中…</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/18/lua/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/18/thread_local/">
+  <time datetime="2023-03-18T16:57:55.000Z">
+    2023-03-18
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/18/thread_local/">linux线程私有数据的原理</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="线程私有数据的应用"><a href="#线程私有数据的应用" class="headerlink" title="线程私有数据的应用"></a>线程私有数据的应用</h3><p><code>errno</code>, <code>pthread_self()</code>都是线程私有数据。比如”名字”, 每个线程都有, 但却各不相同。muduo库使用了gcc提供<code>__thread</code>做到了这点(类似于c++11提供的<code>thread_local</code>, 它们基本等价)。此外pthread也提供了线程私有数据的支持。</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/18/thread_local/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/17/timerfd-eventfd/">
+  <time datetime="2023-03-17T16:57:55.000Z">
+    2023-03-17
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/17/timerfd-eventfd/">如何使用linux基础设施timerfd和eventfd</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近拜读陈硕所著的《Linux多线程服务端编程》, 收获颇多。作者用epoll多路复用+非阻塞IO实现了Reactor服务端框架muduo。其中使用了linux的高级特性<code>timerfd</code>做定时器, <code>eventfd</code>做事件通知, 统一用epoll做多路复用。为了后续muduo的学习, 本文仅仅探索这两个基础设施的用法。</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/17/timerfd-eventfd/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/14/tty-ssh/">
+  <time datetime="2023-03-14T16:57:55.000Z">
+    2023-03-14
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/14/tty-ssh/">tty之ssh的基本实现原理</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>linux服务器用户直接使用终端与服务器交互, 用户可以执行各种命令, 如果电脑上装的是linux无桌面版本, 那么点击开机键, 不久就能见到屏幕上提示登陆的信息, 用户登陆后能进行各种操作, 这个黑色的命令行界面就是终端。</p>
+<p>此外, 桌面版本的linux用户虽然没有直接使用终端, 却能够用类似konsole的<u>终端模拟器</u>与终端交互。此外我们在本地的linux终端上输入<code>ssh 对端服务器的ip</code>, 能够连接到远端服务器, 也能与终端进行交互。这两种场景都离不开<u>伪终端</u>的作用</p>
+<p>阅读本文可以知道伪终端的基本概念, 知道如何实现一个终端模拟器, 知道如何实现一个ssh或者screen那样的软件, 下面是前置知识, 务必阅读。</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/14/tty-ssh/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/13/redis-notes/">
+  <time datetime="2023-03-13T16:57:55.000Z">
+    2023-03-13
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/13/redis-notes/">redis学习记录</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><p>这是我的redis笔记, 便于回忆。正在持续施工当中…</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/13/redis-notes/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/12/tcell/">
+  <time datetime="2023-03-12T16:57:55.000Z">
+    2023-03-12
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/12/tcell/">Golang库推荐: tcell实现对终端的坐标式绘图</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="引入话题"><a href="#引入话题" class="headerlink" title="引入话题"></a>引入话题</h3><p>vim无疑是linux玩家必备的编辑工具, 即使在命令行模式下(假如你现在在使用linux桌面版, 现在你可以按下CTRL+ALT+F2进入命令行模式, 按CTRL+ALT+F1切回), 也能使用这样的编辑工具。它能够接管整个屏幕, 并将文字显示在上面。那么怎么实现这种”接管”整个终端屏幕的软件呢?在golang下就提供了tcell这样方便的工具, 使得我们能以坐标系的方式操纵整个终端屏幕。</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/12/tcell/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/09/mutex3/">
+  <time datetime="2023-03-09T17:57:55.000Z">
+    2023-03-09
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/09/mutex3/">锁的基本原理(3)</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="如何降低无意义的自旋损耗"><a href="#如何降低无意义的自旋损耗" class="headerlink" title="如何降低无意义的自旋损耗?"></a>如何降低无意义的自旋损耗?</h3><p>前两节, 我们实现了自旋锁, 然而自旋锁很拉跨, 它会占用线程的执行时间去做没有意义的自旋操作。也就是说, 自旋属于没有意义的性能损耗, 如果可以, 我们更希望内核此时停止调度这个线程, 转而去执行其它线程, 等待锁空闲的时候, 再回来调度此线程, 借此提高cpu利用率</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/09/mutex3/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/09/mutex2/">
+  <time datetime="2023-03-09T16:57:55.000Z">
+    2023-03-09
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/09/mutex2/">锁的基本原理(2)</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="cas自旋锁引出的问题"><a href="#cas自旋锁引出的问题" class="headerlink" title="cas自旋锁引出的问题"></a>cas自旋锁引出的问题</h3><p>评价锁的一个重要因素就是公平性, 我们可以看到<a target="_blank" rel="noopener" href="https://markity.github.io/2023/03/08/mutex/">上节</a>我们提供了cas自旋锁:</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/09/mutex2/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/08/mutex/">
+  <time datetime="2023-03-08T16:57:55.000Z">
+    2023-03-08
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/08/mutex/">锁的基本原理(1)</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="什么是原子性"><a href="#什么是原子性" class="headerlink" title="什么是原子性?"></a>什么是原子性?</h3><p>在多线程的场景下, 我们会遇到多个线程访问同一个变量的场景。如果多个线程只读一个全局变量, 那没有任何问题, 任何线程都能读到期望的”定值”。但是如果使用多线程进行并发的读写, 就会发生一致性问题。看下面的程序:</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/08/mutex/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/08/sso-cas/">
+  <time datetime="2023-03-08T16:57:55.000Z">
+    2023-03-08
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/08/sso-cas/">cas单点登陆设计与实现</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="背景及问题引出"><a href="#背景及问题引出" class="headerlink" title="背景及问题引出"></a>背景及问题引出</h3><p>一些大企业如阿里巴巴, 对它旗下的各种网站都做了单点登陆的设计。当进入其中一个网站点击登陆时, 浏览器会被重定向到一个登陆的平台进行登陆。在登陆完成后, 我们又能跳回到原来的页面, 并且此时状态更改为“已登陆”。之后访问阿里巴巴的其它相关网站时, 也会保留登陆状态</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/08/sso-cas/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+
+  <nav id="pagination">
+  
+    <a href="/" class="prev">Prev</a>
+  
+  
+    <a href="/page/3/" class="next">Next</a>
+  
+  <div class="clearfix"></div>
+</nav>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>使用unix socket进行本机进程间通讯 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="前言最近在研究docker, 实际上docker是一个c&amp;#x2F;s架构的服务。用户通过docker命令与通过网络连接到dockerd服务然后发送请求, 这样就能操作容器。一般来说, 除了root, 还有docker用户组的用户有权操作容器。这种权限管理是怎么做的呢? 本文来探究这个问题。">
+  
+  <meta name="description" content="前言最近在研究docker, 实际上docker是一个c&#x2F;s架构的服务。用户通过docker命令与通过网络连接到dockerd服务然后发送请求, 这样就能操作容器。一般来说, 除了root, 还有docker用户组的用户有权操作容器。这种权限管理是怎么做的呢? 本文来探究这个问题。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用unix socket进行本机进程间通讯">
+<meta property="og:url" content="http://example.com/2023/05/28/unix-socket/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="前言最近在研究docker, 实际上docker是一个c&#x2F;s架构的服务。用户通过docker命令与通过网络连接到dockerd服务然后发送请求, 这样就能操作容器。一般来说, 除了root, 还有docker用户组的用户有权操作容器。这种权限管理是怎么做的呢? 本文来探究这个问题。">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-05-28T20:57:55.000Z">
+<meta property="article:modified_time" content="2023-06-18T23:15:28.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/05/28/unix-socket/">
+  <time datetime="2023-05-28T20:57:55.000Z">
+    2023-05-28
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">使用unix socket进行本机进程间通讯</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近在研究docker, 实际上docker是一个c&#x2F;s架构的服务。用户通过docker命令与通过网络连接到dockerd服务然后发送请求, 这样就能操作容器。一般来说, 除了root, 还有docker用户组的用户有权操作容器。这种权限管理是怎么做的呢? 本文来探究这个问题。</p>
+<span id="more"></span>
+
+<h3 id="unix-socket的权限控制"><a href="#unix-socket的权限控制" class="headerlink" title="unix socket的权限控制"></a>unix socket的权限控制</h3><p>不同于tcp&#x2F;udp socket, unix socket不是基于ip进行连接的, 而是基于文件进行区分的。这种特殊文件叫做socket file, 如果我们cd到&#x2F;var&#x2F;run里面进行<code>ls -al | grep docker.sock</code>就能看到以下输出:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ cd /var/run</span><br><span class="line">$ ls -al | grep docker.sock</span><br><span class="line">srw-rw----  1 root  docker    0 May 28 15:40 docker.sock</span><br></pre></td></tr></table></figure>
+
+<p>只有拥有此文件读写权限的用户才能连接到这个socket, 而docker用户组就有这个特权。有了unix socket这个工具, 就能让有一定权限的用户才能连上某个服务, 做好权限管理, 这种权限管理的思路真的很不错。</p>
+<h3 id="unix-socket的性能和局限"><a href="#unix-socket的性能和局限" class="headerlink" title="unix socket的性能和局限"></a>unix socket的性能和局限</h3><p>这种套接字性能极强但不能跨主机, 它不经过内核协议栈, 只是进程间数据的拷贝, 因此较快。陈硕说进程间通讯他只会使用tcp, 理由是unix socket不能跨主机, pipe依赖进程间的父子关系, 且数据是单向的, 要双向通信还得开两对pipe, 这太不方便。</p>
+<p>但是unix socket的优势在于易于权限管理, 拥有socket读写权限的用户就能操作本机的容器, 这真的很妙很easy。</p>
+<h3 id="tcp版本的unix-socket用法"><a href="#tcp版本的unix-socket用法" class="headerlink" title="tcp版本的unix socket用法"></a>tcp版本的unix socket用法</h3><p>unix socket分为tcp版本的和udp版本的, 这里讨论流式的, 也就是tcp版本的unix socket。</p>
+<p>要凭空创建一个unix socket, 在go中这点是有技巧的:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">net.DialUnix(<span class="string">&quot;unix&quot;</span>, &amp;net.UnixAddr&#123;Name: <span class="string">&quot;./mysocket&quot;</span>, Net: <span class="string">&quot;unix&quot;</span>&#125;, &amp;net.UnixAddr&#123;Name: <span class="string">&quot;./mysocket&quot;</span>, Net: <span class="string">&quot;unix&quot;</span>&#125;)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>其实要创建unix socket, 在c语言里面的表达是创建socket之后bind, bind就会自动创建套接字文件</p>
+</blockquote>
+<p>其次在go语言中, ListenUnix也能创建套接字, 并且可选listner关闭后是否删除socket文件:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">listener, err := net.ListenUnix(<span class="string">&quot;unix&quot;</span>, &amp;net.UnixAddr&#123;Name: fmt.Sprintf(<span class="string">&quot;/var/lib/podkit/socket/%d.sock&quot;</span>ContainerID), Net: <span class="string">&quot;unix&quot;</span>&#125;)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">listener.SetUnlinkOnClose(<span class="literal">true</span>)</span><br></pre></td></tr></table></figure>
+
+<p>咱们来看看什么时候才会删除socket文件:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SetUnlinkOnClose sets whether the underlying socket file should be removed from the file system when the listener is closed.</span><br><span class="line"></span><br><span class="line">The default behavior is to unlink the socket file only when package net created it. That is, when the listener and the underlying socket file were created by a call to Listen or ListenUnix, then by default closing the listener will remove the socket file. but if the listener was created by a call to FileListener to use an already existing socket file, then by default closing the listener will not remove the socket file.</span><br></pre></td></tr></table></figure>
+
+<p>我建议的是对于一个软件, 安装时便创建好socket文件。事实上docker也是这么做的。</p>
+<p>接下来服务端能通过net.ListenUnix监听套接字上过来的连接, 客户端如果要连接服务端, 不必使用DialUnix, 直接使用Dial就行:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conn, err := net.Dial(<span class="string">&quot;unix&quot;</span>, <span class="string">&quot;path_to_your_socket&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>unix套接字的接口及其简单, 无非就是read和write, close read, close write那一套, 和tcp的一模一样。但是net.Dial返回的net.Conn接口没有close read, close write这种半关的接口。如果需要, 可以net.DialUnix, 它返回UnixConn的接口。</p>
+</blockquote>
+<h3 id="udp版本的unix-socket用法"><a href="#udp版本的unix-socket用法" class="headerlink" title="udp版本的unix socket用法"></a>udp版本的unix socket用法</h3><p>这不会有人用吧?我想不到任何理由需要使用这个。这里占个坑, 以后再来填。</p>
+<h3 id="使用文件进行权限管理"><a href="#使用文件进行权限管理" class="headerlink" title="使用文件进行权限管理"></a>使用文件进行权限管理</h3><p>对于一个程序, 特别是owner是root且具有suid权限位的可执行文件, 如果想要限制只有某些用户才能使用某些功能的话, 用文件的权限进行控制是个很好的思路。在使用这个程序的某些敏感功能时, 可以通过打开某些文件来判断用户是否“够格”。</p>
+<p>只要精心设计文件的权限, 在进行敏感操作的时候尝试打开文件测试权限就可以了。如此一来, 我们可以为程序的每个细分功能都设计单独的权限, 达到精确控制权限的目的。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
