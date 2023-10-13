@@ -1,0 +1,328 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>redis学习记录 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="说明这是我的redis笔记, 便于回忆。正在持续施工当中…">
+  
+  <meta name="description" content="说明这是我的redis笔记, 便于回忆。正在持续施工当中…">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis学习记录">
+<meta property="og:url" content="http://example.com/2023/03/14/redis-notes/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="说明这是我的redis笔记, 便于回忆。正在持续施工当中…">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-03-13T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-05-19T05:22:06.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="notes">
+<meta property="article:tag" content="redis">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/14/redis-notes/">
+  <time datetime="2023-03-13T16:57:55.000Z">
+    2023-03-14
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">redis学习记录</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><p>这是我的redis笔记, 便于回忆。正在持续施工当中…</p>
+<span id="more"></span>
+
+<h3 id="关于命令的原子性"><a href="#关于命令的原子性" class="headerlink" title="关于命令的原子性:"></a>关于命令的原子性:</h3><p>总的来说, redis保证来自某个客户端的一条命令是原子的, 如果有必要, 可以使用事务或lua脚本来保证来个某个客户端的多条指令原子, 不发生interwaving(交织)。</p>
+<p>redis的事务并不具有回滚的特性, 它只是保证多条指令原子不交织, 因此可以不叫它事务, 可以叫它原子指令集合。</p>
+<h3 id="关于键值对与键的命名"><a href="#关于键值对与键的命名" class="headerlink" title="关于键值对与键的命名:"></a>关于键值对与键的命名:</h3><p>redis储存的键值对, 键是一个字符串类型, 不应该太长或太短。为了保证键的意义逻辑清晰, 提倡用”分级”的命名规则, 比如”user:1000:followers”。键的最大长度是512M(与能存储的字符串长度一致), 但是别在命名上找茬, 简洁且易读就行了。</p>
+<h3 id="列举所有的数据类型"><a href="#列举所有的数据类型" class="headerlink" title="列举所有的数据类型:"></a>列举所有的数据类型:</h3><ul>
+<li>Strings: 字节集合, 最大512M</li>
+<li>Lists: 链表(Linked List)</li>
+<li>Sets: Hash Set, 无序String集合</li>
+<li>Hashes: 哈希表</li>
+<li>Sorted sets: 就像数值与字符串的双向映射, 可以支持两个排序方式(字典序和根据分数)</li>
+<li>Streams: TODO</li>
+<li>Grospatial indexes: TODO</li>
+<li>Bitmaps: String的字节操作支持</li>
+<li>Bitfields: 多个无符号整数的集合, 内部用一系列位维护</li>
+<li>HyperLogLog: 用于统计字符串种类的数据类型, 相比Sets, 它占据恒定的内存</li>
+</ul>
+<h3 id="数据类型Strings"><a href="#数据类型Strings" class="headerlink" title="数据类型Strings:"></a>数据类型Strings:</h3><p>不是utf8字符的集合, 它只是字节的集合, 类似c++的<code>vector&lt;char&gt;</code>或者go的<code>[]uint8</code>。可以在上面存储图片等二进制数据, 大小不超过512M。值得一提的是redis的键也是这种类型。</p>
+<p>Strings可以被解析成整数, 并且能够使用<code>INCR/DECR/INCRBY/DECRBY</code>等操作进行增减:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; set counter 100</span><br><span class="line">OK</span><br><span class="line">&gt; incr counter</span><br><span class="line">(interget) 101</span><br><span class="line">&gt; incrby counter 50</span><br><span class="line">(interget) 152</span><br></pre></td></tr></table></figure>
+
+<p>此处虽然redis内部存储的是string, 但是使用上述几个命令能解析这个字符串为整数, 进行加减操作。此外, 对不能解析成interget的字符串使用上述命令, 那么报错。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; set counter &quot; 100&quot;</span><br><span class="line">OK</span><br><span class="line">&gt; incr counter</span><br><span class="line">(error) ERR value is not an integer or out of range</span><br></pre></td></tr></table></figure>
+
+<h3 id="get-set-del-exists-type-ttl-pttl命令"><a href="#get-set-del-exists-type-ttl-pttl命令" class="headerlink" title="get&#x2F;set&#x2F;del&#x2F;exists&#x2F;type&#x2F;ttl&#x2F;pttl命令:"></a>get&#x2F;set&#x2F;del&#x2F;exists&#x2F;type&#x2F;ttl&#x2F;pttl命令:</h3><p>set命令很多参数, 下面是它的总的用法:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set key value [NX|XX] [GET] [EX seconds|PX milliseconds]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>NX(Not eXists): 要求key此刻不存在</li>
+<li>XX: 要求key此刻存在</li>
+<li>GET: 获得键之前对应的值, 可以用这个操作实现互斥锁, 但这么做显然性能上得不偿失</li>
+<li>EX(EXpire): 在多少秒后自动删除</li>
+<li>PX: 在多少微秒后自动删除</li>
+</ul>
+<p>下面列举了其他的一些命令的用法:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&gt; set key value</span><br><span class="line">OK</span><br><span class="line">&gt; mset a 10 b 20 c 30</span><br><span class="line">OK</span><br><span class="line">&gt; mget key a b c</span><br><span class="line">1) &quot;value&quot;</span><br><span class="line">2) &quot;10&quot;</span><br><span class="line">3) &quot;20&quot;</span><br><span class="line">4) &quot;30&quot;</span><br><span class="line">&gt; del c</span><br><span class="line">(interget) 1</span><br><span class="line">&gt; exists c</span><br><span class="line">(interget) 0</span><br><span class="line">&gt; type b</span><br><span class="line">string</span><br><span class="line">&gt; type mykey</span><br><span class="line">none</span><br></pre></td></tr></table></figure>
+
+<p>关于过期事件的查询:</p>
+<p>set可以指定过期时间, ttl可以查询某个键值对的过期时间, 但是这个指令只能精确到秒, pttl可以精确到微秒:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; set key 100 ex 10</span><br><span class="line">OK</span><br><span class="line">&gt; ttl key</span><br><span class="line">(interget) 8</span><br><span class="line">&gt; set key 100 px 1000</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+
+<h3 id="keys查询键"><a href="#keys查询键" class="headerlink" title="keys查询键"></a>keys查询键</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keys pattern</span><br></pre></td></tr></table></figure>
+
+<p>可以查询所有满足条件的键(当然必须存在):</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">keys *				# 查询所有键</span><br><span class="line">keys abc*			# 查询abc开头的</span><br><span class="line">keys *abc*			# 查询包含abc的</span><br></pre></td></tr></table></figure>
+
+<h3 id="Lists"><a href="#Lists" class="headerlink" title="Lists"></a>Lists</h3><p>指的是<code>Linked List</code>, 就像内核链表一样的东西, 向插入收尾的性能不会随着链表长度的增加而递增。然而随之带来的是index访问速度的下滑。</p>
+<p>应用场景:</p>
+<ul>
+<li>List可以用来实现生产-消费队列</li>
+<li>推特用它保存用户最新的几条推送, 这样响应会很快, 这个其实就是个缓存</li>
+</ul>
+<p>一般操作:</p>
+<p><code>LPUSH</code>命令将新的元素插入到List头部, <code>RPUSH</code>将新的元素插入List尾部, 这两个命令返回值是List剩余元素的个数。<code>LPOP</code>, <code>RPOP</code>移除首尾元素, 返回的是弹出的元素。这四个命令的时间复杂度都是O(1)。<code>LLEN</code>用来查询此时List的长度。</p>
+<p><code>LRANGE</code>取两个索引, 第一个是开始索引, 第二个是结束索引, 支持负数代表”倒数”含义:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&gt; rpush mylist A</span><br><span class="line">(integer) 1</span><br><span class="line">&gt; rpush mylist B</span><br><span class="line">(integer) 2</span><br><span class="line">&gt; lpush mylist second first</span><br><span class="line">(integer) 3</span><br><span class="line">&gt; lrange mylist 0 -1</span><br><span class="line">1) &quot;first&quot;</span><br><span class="line">2) &quot;second&quot;</span><br><span class="line">3) &quot;A&quot;</span><br><span class="line">4) &quot;B&quot;</span><br><span class="line">&gt; lpop mylist</span><br><span class="line">&quot;first&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意<code>lpush mylist second first</code>相当于<code>lpush mylist second</code> + <code>lpush mylist first</code>的原子操作, 最后”first”在最前面。</p>
+<p>如果<code>LRANGE</code>取到”意料之外”(不符合逻辑的, 比如第二个索引小于第一个的, 或第一个索引大于第二个的, 或超界的)的索引, 那么它简单地返回<code>empty array</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&gt; rpush mylist A</span><br><span class="line">(integer) 1</span><br><span class="line">&gt; lrange A 1 2</span><br><span class="line">(empty array)</span><br><span class="line">&gt; lrange A 10 5</span><br><span class="line">(empty array)</span><br><span class="line">&gt; lrange A -2 -5</span><br><span class="line">(empty array)</span><br></pre></td></tr></table></figure>
+
+<p>如果想要得到列表所有元素, 使用<code>lrange 0 -1</code>即可, 由于是用链表实现的, 它的时间复杂度为O(n)。</p>
+<p><code>LTRIM</code>用于”修剪”List:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&gt; rpush mylist 1 2 3 4 5</span><br><span class="line">(integer) 5</span><br><span class="line">&gt; ltrim mylist 0 2</span><br><span class="line">OK</span><br><span class="line">&gt; lrange mylist 0 -1</span><br><span class="line">1) &quot;1&quot;</span><br><span class="line">2) &quot;2&quot;</span><br><span class="line">3) &quot;3&quot;</span><br></pre></td></tr></table></figure>
+
+<p>List的阻塞操作:</p>
+<p>对于生产-消费者的场景, 如果简单地用生产者<code>LPUSH</code>, 消费者<code>RPOP</code>, 在消费队列中没有元素时返回nil, 此时最好让消费者阻塞, 避免没有用的自旋。redis提供了<code>BRPOP</code>和<code>BLPOP</code>, 如果没有元素, 那么阻塞等待。它接收多个参数, 键和时间。返回值有两个, 一个是键(这是因为可以阻塞等待多个键), 一个是值。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BRPOP mylist 2</span><br><span class="line">(nil)</span><br><span class="line">(2.02s)</span><br></pre></td></tr></table></figure>
+
+<p>阻塞操作的一些技巧:</p>
+<p>1.如果指定0为时间, 那么将会永久阻塞<br>2.可以指定多个键, 当其中一个有值时就返回, 返回谁是不确定的<br>3.如果有多个客户端都阻塞等待一个键, 那么redis将保证公平性, 先来的优先拿到</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&gt; lpush mylist1 x</span><br><span class="line">(integer) 1</span><br><span class="line">&gt; lpush mylist2 x</span><br><span class="line">(integer) 1</span><br><span class="line">&gt; brpop mylist1 mylist2 1</span><br><span class="line">1) &quot;mylist1&quot;</span><br><span class="line">2) &quot;x&quot;</span><br></pre></td></tr></table></figure>
+
+<p><code>LMOVE</code>&#x2F;<code>BLMOVE</code>操作:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lmove source destination &lt;LEFT | RIGHT&gt; &lt;LEFT | RIGHT&gt;</span><br></pre></td></tr></table></figure>
+
+<p>原子地将目标List的first&#x2F;last元素移动到目标的head&#x2F;tail处。</p>
+<p>这种操作常常用来实现(FIXME)</p>
+<h3 id="键的存亡"><a href="#键的存亡" class="headerlink" title="键的存亡"></a>键的存亡</h3><p>有如下规则:</p>
+<ol>
+<li>When we add an element to an aggregate data type, if the target key does not exist, an empty aggregate data type is created before adding the element.</li>
+</ol>
+<p>翻译: 当我们使用操作聚合数据类型的插入元素操作时, 如果目标键不存在, 一个空的聚合数据类型就会在插入前被创建。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; del mylist</span><br><span class="line">(integer) 1</span><br><span class="line">&gt; lpush mylist 1 2 3</span><br><span class="line">(integer) 3</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>When we remove elements from an aggregate data type, if the value remains empty, the key is automatically destroyed. The Stream data type is the only exception to this rule.</li>
+</ol>
+<p>翻译: 当我们从聚合数据类型删除元素时, 如果删除后它什么元素也不剩了, 那么这个键就被删除了。但是Stream类型是唯一的例外(TODO)。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; lpush mylist 1</span><br><span class="line">(integer) </span><br><span class="line">&gt; rpop mylist</span><br><span class="line">&quot;1&quot;</span><br><span class="line">&gt; exists mylist</span><br><span class="line">(integer) 0</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>Calling a read-only command such as LLEN (which returns the length of the list), or a write command removing elements, with an empty key, always produces the same result as if the key is holding an empty aggregate type of the type the command expects to find.</li>
+</ol>
+<p>翻译: 对不存在的key使用”只读”的命令例如<code>LLEN</code>(它会返回List此刻的长度), 或者使用删除元素的操作像<code>LPOP</code>, 总是产生就像该键对应的是一个空的聚合数据类型的结果。</p>
+<p>比如, <code>del mylist</code>后, <code>LLEN mylist</code>返回0, <code>RPOP mylist</code>返回nil。就好像我们在操作一个空的List一样。</p>
+<h3 id="哈希"><a href="#哈希" class="headerlink" title="哈希"></a>哈希</h3><p>哈希就是键值对, 对它的读写时间复杂读是O(1), 基本的命令命令包括<code>HSET</code>, <code>HGET</code>, <code>HMGET</code>, <code>HDEL</code>, <code>HEXISTS</code>, <code>HKEYS</code>, <code>HLEN</code>:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&gt; hset user:1000 username antirez birthyear 1977 verified 1</span><br><span class="line">(integer) 3</span><br><span class="line">&gt; hget user:1000 username</span><br><span class="line">&quot;antirez&quot;</span><br><span class="line">&gt; hget user:1000 birthyear</span><br><span class="line">&quot;1977&quot;</span><br><span class="line">&gt; hgetall user:1000</span><br><span class="line">1) &quot;username&quot;</span><br><span class="line">2) &quot;antirez&quot;</span><br><span class="line">3) &quot;birthyear&quot;</span><br><span class="line">4) &quot;1977&quot;</span><br><span class="line">5) &quot;verified&quot;</span><br><span class="line">6) &quot;1&quot;</span><br><span class="line">&gt; hmget user:1000 username birthyear</span><br><span class="line">1) &quot;antirez&quot;</span><br><span class="line">2) &quot;1977&quot;</span><br></pre></td></tr></table></figure>
+
+<p>此外还包括对键对应的值进行数值操作:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; hincrby user:1000 birthyear 10</span><br><span class="line">(integer) 1987</span><br><span class="line">&gt; hincrby user:1000 birthyear 10</span><br><span class="line">(integer) 1997</span><br></pre></td></tr></table></figure>
+
+<p>值得一提的是, 如果hash的键不存在, 那么数值操作将在执行前提前将”0”写入:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; hincrby user:1000 not_exists 10</span><br><span class="line">(integer) 10</span><br><span class="line">&gt; hget user:1000 not_exists</span><br><span class="line">&quot;10&quot;</span><br></pre></td></tr></table></figure>
+
+<p>上述操作和对键直接使用数值操作如出一辙。</p>
+<p>hash的键排序:</p>
+<p>用<code>HKEYS</code>获得的hash键, 将根据键进行排序, 这与之后的Sorted Sets密切相关。</p>
+<h3 id="Sets"><a href="#Sets" class="headerlink" title="Sets"></a>Sets</h3><p>Sets是无序字符串集合, <code>SADD</code>添加新元素进去, <code>SREM</code>删除某个元素, <code>SMEMBERS</code>得到所有的元素(字符串), <code>SISMEMBER</code>测试是否存在这个元素(字符串)。<code>SCARD</code>用来查询现在的Set有多少个元素。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; sadd myset 1 2 3</span><br></pre></td></tr></table></figure>
+
+<p>它很适合做元素唯一的列表, 比如保存用户关注的文章ID。</p>
+<p><code>SINTER</code>命令求多个Set的交集, 它会返回多个Set共有的字符串。<code>SUNION</code>用来求多个Set的并集。<code>SDIFF</code>用来求差集(并集去除补集的那部分)。这苍耳命令还有<code>...STORE destination key1 key2...</code>能把结果存储到目标键中。</p>
+<p><code>SUNIONSTORE</code>用来求并集, 并将结果存储到一个目标键里面。但是这种操作也可以用来做Set的拷贝。</p>
+<p><code>SPOP</code>从Set随即弹出一个元素, 此命令将删除元素。<code>SRANDMEMBER</code>能不删除地获取一个元素, 可选的<code>count</code>参数, 表示获取至多多少个元素。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; smembers A</span><br><span class="line">1) &quot;1&quot;</span><br><span class="line">2) &quot;3&quot;</span><br><span class="line">&gt; srandmember A 1000</span><br><span class="line">1) &quot;1&quot;</span><br><span class="line">2) &quot;3&quot;</span><br></pre></td></tr></table></figure>
+
+<p>由于上面A只有两个元素, 所以<code>SRANDMEMBER</code>只返回了两个。</p>
+<h3 id="Sorted-sets"><a href="#Sorted-sets" class="headerlink" title="Sorted sets"></a>Sorted sets</h3><p>它和Sets一样, 不允许多个重复的元素。不同点是它是有序的, 通过<code>score</code>(分数)从小到大进行排序, 其中分数是<code>double</code>类型(这点很特殊, 因为redis没有<code>double</code>这种数据类型, 但是在Sorted sets这里却支持了这种浮点类型进行排序)</p>
+<p>有两套排序机制, 分数(score)和字典序(lex)。默认用分数排序, 当分数一致时用字典序进行排序。其中成员是唯一的, 但是分数可以重复。当zadd尝试插入一个已存在的元素时, 默认执行覆盖, 但显示指定XX|NX。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ZADD key [NX|XX] [GT|LT] [CH] [INCR] score member [score member ...]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>NX: 要求不存在元素</li>
+<li>XX: 要求存在元素</li>
+<li>INCR: 进行增加, 常用于更新已存在的元素的分数</li>
+<li>CH: 返回成功<u>新增</u>元素的个数(因为zadd已存在的元素会进行覆盖, 它们不算新增)</li>
+<li>GT(greater than): 修改的分数必须大于原来的分数才能修改成功, 不与[NX|XX]共用</li>
+<li>LG(less than): 同理, 但是是小于</li>
+</ul>
+<p>默认进行覆盖的小例子:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&gt; zadd testkey 1.1 redis</span><br><span class="line">(integer) 1</span><br><span class="line">&gt; zrange testkey 0 10 WITHSCORES</span><br><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;1.1000000000000001&quot;</span><br><span class="line">&gt; zadd testkey 2.2 redis</span><br><span class="line">(integer) 0</span><br><span class="line">&gt; zrange test 0 -1 withscores</span><br><span class="line">1) &quot;redis&quot;</span><br><span class="line">2) &quot;2.2000000000000002&quot;</span><br></pre></td></tr></table></figure>
+
+<p>因为它有两个排序原则, 所以它可以用来做排行榜, 也可以维护字典序排序的字符串集合。redis文档指出它可以做请求的滑动窗口, 避免过量的网络请求, 防止流量攻击。</p>
+<p>遍历Sorted sets的方式:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrange key start stop [byscore | bylex] [rev] [limit offset count] [withscores]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>bysocre: 依据分数排序</li>
+<li>bylex: 依据字典序排序, 用它时第一个字符指示是否是闭合区间, 比如<code>start=[B, stop=[C</code>是左闭右开的</li>
+<li>rev: 是否倒序</li>
+<li>limit: 类似SQL的<code>SELECT LIMIT offset, count</code></li>
+<li>withscores: 是否带有分数</li>
+</ul>
+<p>此外还有count系列的命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">zcount key min max: 按分数计数</span><br><span class="line">zlexcount key min max： 按字典序计数</span><br><span class="line">zcard key: 相当于zcount key 0 -1</span><br></pre></td></tr></table></figure>
+
+<p>删除命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">zrem key element</span><br><span class="line">zremrange key start end</span><br><span class="line">zremrangebylex key min max</span><br><span class="line">zremrangebyrank key start end</span><br><span class="line">zremrangebyscore key min max</span><br></pre></td></tr></table></figure>
+
+<p>查询成员的分数:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zscore key element</span><br></pre></td></tr></table></figure>
+
+<p>技巧, 如果将所有元素的分数都指定成一样的, 那么就可以维护一个字典序的字符串集合。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; zadd hackers 0 &quot;Alan Kay&quot; 0 &quot;Sophie Wilson&quot; 0 &quot;Richard Stallman&quot;</span><br><span class="line">(integer) 3</span><br><span class="line">&gt; zrange hackers 0 -1</span><br><span class="line">1) &quot;Alan Kay&quot;</span><br><span class="line">2) &quot;Richard Stallman&quot;</span><br><span class="line">3) &quot;Sophie Wilson&quot;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="Bitmaps"><a href="#Bitmaps" class="headerlink" title="Bitmaps"></a>Bitmaps</h3><p>事实上Bitmaps不是数据类型, 它只是用在字符串类型上的一系列比特操作, 其中操作单个原子的操作是O(1)的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">getbit key offset: 如果超界, 那么返回0</span><br><span class="line">setbit key offset value(0或1): 如果超界限, 那么返回0</span><br></pre></td></tr></table></figure>
+
+<p>还有一些操作:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bitcount key [start end [byte|bit]]: 查找被置为1的位</span><br><span class="line">bitpos key bit [start [end [byte|bit]]]: 查找第一个bit的位置</span><br><span class="line">bitop operation destkey key [key ...]: 可以进行XOR/AND/OR/NOT位操作</span><br></pre></td></tr></table></figure>
+
+<p>虽然我想不到redis搞这个有什么用, 但是官网却给出了一个应用场景, 我不懂但我大受震撼:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">For example imagine you want to know the longest streak of daily visits of your web site users. You start counting days starting from zero, that is the day you made your web site public, and set a bit with SETBIT every time the user visits the web site. As a bit index you simply take the current unix time, subtract the initial offset, and divide by the number of seconds in a day (normally, 3600*24).</span><br><span class="line"></span><br><span class="line">This way for each user you have a small string containing the visit information for each day. With BITCOUNT it is possible to easily get the number of days a given user visited the web site, while with a few BITPOS calls, or simply fetching and analyzing the bitmap client-side, it is possible to easily compute the longest streak.</span><br><span class="line"></span><br><span class="line">Bitmaps are trivial to split into multiple keys, for example for the sake of sharding the data set and because in general it is better to avoid working with huge keys. To split a bitmap across different keys instead of setting all the bits into a key, a trivial strategy is just to store M bits per key and obtain the key name with bit-number/M and the Nth bit to address inside the key with bit-number MOD M.</span><br></pre></td></tr></table></figure>
+
+<h3 id="HyperLogLogs"><a href="#HyperLogLogs" class="headerlink" title="HyperLogLogs"></a>HyperLogLogs</h3><p>这种数据类型是专门用来统计元素的种类的, 就像Sets一样, 但是允许占用恒定的内存, 不存储元素而只是统计种类。想想如果用Sets做种类统计的话, 需要存在String, 这样它的空间就是O(N)递增的, 但是HLL不会, 它不存储元素, 占用的内存是恒定的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; pfadd test 1 2 3 4</span><br><span class="line">(integer) 1</span><br><span class="line">&gt; pfadd test 1</span><br><span class="line">(integer) 0</span><br><span class="line">&gt; pfcount test</span><br><span class="line">(integer) 4</span><br></pre></td></tr></table></figure>
+
+<p>文档提到它可以用来统计用户每天搜索内容(即有多少种不同的字符串)。</p>
+<p>可以用<code>PFMERGE</code>用于合并多个HLL。</p>
+<h3 id="Streams-TODO"><a href="#Streams-TODO" class="headerlink" title="Streams TODO"></a>Streams TODO</h3><p>Streams是redis最复杂的一个数据类型, 文档就好大一串。先搁置了。</p>
+<h3 id="Grospatial-indexes-TODO"><a href="#Grospatial-indexes-TODO" class="headerlink" title="Grospatial indexes: TODO"></a>Grospatial indexes: TODO</h3><p>搁置先。</p>
+<h3 id="Bitfields"><a href="#Bitfields" class="headerlink" title="Bitfields"></a>Bitfields</h3><p>对于一个玩家, 我们需要保存他的两个信息, 获得的金币数量以及杀死的怪物数量。我们希望能原子的改变这两个信息(不发生interwaving), 当然我们可以使用lua脚本, 但是我们这里选择用bitfields。bitfields维护的是一些位, 其实我们可以认为bitfields就是多个整数变量的集合。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&gt; bitfield player:1:stats set u32 #0 1000</span><br><span class="line">(integer) 0</span><br><span class="line">&gt; bitfield player:1:stats incrby u32 #0 50 incrby u32 #1 1</span><br><span class="line">1) (integer) 1050</span><br><span class="line">2) (integer) 1</span><br></pre></td></tr></table></figure>
+
+<p>支持的操作有SET&#x2F;INCRBY&#x2F;GET</p>
+<h3 id="高级特性-Pub-Sub"><a href="#高级特性-Pub-Sub" class="headerlink" title="高级特性: Pub&#x2F;Sub"></a>高级特性: Pub&#x2F;Sub</h3><p>关注&#x2F;订阅模式可以用来做消息通知, 见后面的Go例子。</p>
+<h3 id="lua脚本"><a href="#lua脚本" class="headerlink" title="lua脚本:"></a>lua脚本:</h3><p>使用eval命令可以跑脚本:</p>
+<p>要原子地执行操作, lua脚本和事务是很好的选择, 这里介绍lua脚本, 下面是个hello world程序:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&gt; eval &quot;return &#123;KEYS[1],KEYS[2],ARGV[1],ARGV[2]&#125;&quot; 2 key1 key2 first second</span><br><span class="line">1) &quot;key1&quot;</span><br><span class="line">2) &quot;key2&quot;</span><br><span class="line">3) &quot;first&quot;</span><br><span class="line">4) &quot;second&quot;</span><br></pre></td></tr></table></figure>
+
+<p>eval是用来执行lua脚本的, 下面是命令的模式, 将输入分为键和值(其实它们都是字符串), 这样做是为了逻辑清晰, 因为redis是键值对数据库。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">eval script numkeys [key [key ...]] [arg [arg ...]</span><br></pre></td></tr></table></figure>
+
+<p>原子地设置两个变量, 这里用到了mset调用, 其实等价于mset, 只是用了<code>redis.call</code>:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">eval &quot;return redis.call(&#x27;mset&#x27;, KEYS[1], ARGV[1], KEYS[2], ARGV[2])&quot; 2 key1 key2 value1 value2</span><br></pre></td></tr></table></figure>
+
+<p>为了方便起见, 下面用go-redis跑lua脚本。</p>
+<h3 id="Golang使用redis的示例"><a href="#Golang使用redis的示例" class="headerlink" title="Golang使用redis的示例"></a>Golang使用redis的示例</h3><p>获取包:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go get -u <span class="string">&quot;github.com/redis/go-redis/v9&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>Hello World:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;github.com/redis/go-redis/v9&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="comment">// 支持了Go的context, 能够支持任务取消</span></span><br><span class="line">	ctx := context.Background()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建客户端</span></span><br><span class="line">	rdb := redis.NewClient(&amp;redis.Options&#123;</span><br><span class="line">		Addr:	  <span class="string">&quot;localhost:6379&quot;</span>,</span><br><span class="line">		Password: <span class="string">&quot;&quot;</span>, <span class="comment">// 没密码</span></span><br><span class="line">		DB:		  <span class="number">0</span>,  <span class="comment">// 0号库是默认库</span></span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// set key val time, time为0代表没过期时间</span></span><br><span class="line">	err := rdb.Set(ctx, <span class="string">&quot;key&quot;</span>, <span class="string">&quot;value&quot;</span>, <span class="number">0</span>).Err()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// get key</span></span><br><span class="line">	val, err := rdb.Get(ctx, <span class="string">&quot;key&quot;</span>).Result()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">	fmt.Println(<span class="string">&quot;key&quot;</span>, val)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果不存在返回的是redis.Nil</span></span><br><span class="line">	val2, err := rdb.Get(ctx, <span class="string">&quot;key2&quot;</span>).Result()</span><br><span class="line">	<span class="keyword">if</span> err == redis.Nil &#123;</span><br><span class="line">		fmt.Println(<span class="string">&quot;key2 does not exist&quot;</span>)</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		fmt.Println(<span class="string">&quot;key2&quot;</span>, val2)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Output: key value</span></span><br><span class="line">	<span class="comment">// key2 does not exist</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="go-redis调用lua-TODO"><a href="#go-redis调用lua-TODO" class="headerlink" title="go-redis调用lua: TODO"></a>go-redis调用lua: TODO</h3><h3 id="发布订阅demo"><a href="#发布订阅demo" class="headerlink" title="发布订阅demo"></a>发布订阅demo</h3><p>publisher:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/redis/go-redis/v9&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ctx := context.Background()</span><br><span class="line"></span><br><span class="line">	rdb := redis.NewClient(&amp;redis.Options&#123;</span><br><span class="line">		Addr:     <span class="string">&quot;localhost:6379&quot;</span>,</span><br><span class="line">		Password: <span class="string">&quot;&quot;</span>, <span class="comment">// no password set</span></span><br><span class="line">		DB:       <span class="number">0</span>,  <span class="comment">// use default DB</span></span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		time.Sleep(time.Second)</span><br><span class="line">		<span class="keyword">if</span> err := rdb.Publish(ctx, <span class="string">&quot;mychannel&quot;</span>, <span class="string">&quot;Hello World&quot;</span>).Err(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>subscriber:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/redis/go-redis/v9&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ctx := context.Background()</span><br><span class="line"></span><br><span class="line">	rdb := redis.NewClient(&amp;redis.Options&#123;</span><br><span class="line">		Addr:     <span class="string">&quot;localhost:6379&quot;</span>,</span><br><span class="line">		Password: <span class="string">&quot;&quot;</span>, <span class="comment">// no password set</span></span><br><span class="line">		DB:       <span class="number">0</span>,  <span class="comment">// use default DB</span></span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	sub := rdb.Subscribe(ctx, <span class="string">&quot;mychannel&quot;</span>)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		m, err := sub.ReceiveMessage(ctx)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(m.Channel, m.Payload)</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/notes/" rel="tag">notes</a>, <a class="tags-none-link" href="/tags/redis/" rel="tag">redis</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>信号处理函数是如何返回的(1)? | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="从程序入手, 信号中断的基本逻辑下面的程序说明了一个基本的信号处理函数如何建立:">
+  
+  <meta name="description" content="从程序入手, 信号中断的基本逻辑下面的程序说明了一个基本的信号处理函数如何建立:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="信号处理函数是如何返回的(1)?">
+<meta property="og:url" content="http://example.com/2023/02/24/sigreturn/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="从程序入手, 信号中断的基本逻辑下面的程序说明了一个基本的信号处理函数如何建立:">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/srop-stack.png">
+<meta property="article:published_time" content="2023-02-23T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-09-15T15:57:06.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="security">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/srop-stack.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/24/sigreturn/">
+  <time datetime="2023-02-23T16:57:55.000Z">
+    2023-02-24
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">信号处理函数是如何返回的(1)?</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="从程序入手-信号中断的基本逻辑"><a href="#从程序入手-信号中断的基本逻辑" class="headerlink" title="从程序入手, 信号中断的基本逻辑"></a>从程序入手, 信号中断的基本逻辑</h3><p>下面的程序说明了一个基本的信号处理函数如何建立:</p>
+<span id="more"></span>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">sighandler</span><span class="params">(<span class="type">int</span> signo, <span class="type">siginfo_t</span> *info, <span class="type">void</span> *ctx)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;处理函数\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">stack_t</span> s;</span><br><span class="line">    s.ss_flags = <span class="number">0</span>;</span><br><span class="line">    s.ss_size = <span class="number">40000</span>;</span><br><span class="line">    s.ss_sp = <span class="built_in">malloc</span>(<span class="number">40000</span>);</span><br><span class="line">    sigaltstack(&amp;s, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">action</span>;</span></span><br><span class="line">    action.sa_flags = SA_SIGINFO|SA_ONSTACK;</span><br><span class="line"></span><br><span class="line">    sigfillset(&amp;action.sa_mask);</span><br><span class="line">    action.sa_sigaction = sighandler;</span><br><span class="line">    sigaction(SIGINT, &amp;action, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此处我们使用了信号自定义栈, 在跳入信号处理函数时, 内核将使用这个栈作为信号处理函数的栈。在main函数中, 有一个无限循环, 如果我们在程序运行时按<code>CTRL+C</code>, <code>SIGINT</code>信号将被发送给进程, 并保存在此进程的<code>task_struct</code>中。内核在调度此进程时, 查到此进程的<code>task_struct</code>里面有<code>未决</code>的且未被阻塞的信号, 便向这个自定义栈插入<code>栈帧</code>(就是向栈顶插入一些信息, 包括一些寄存器信息, 以及原来的栈信息), 并跳入预设的信号处理函数中。在系统设置的<code>栈帧</code>中包含了足够的寄存器信息, 在信号处理函数中调用<code>sigreturn</code>, 内核将弹出<code>栈帧</code>并恢复原来的执行流执行, 此时各种寄存器都会被恢复, 包括栈也会被恢复, 这样就完整恢复了上下文, 回到原来的执行流了。</p>
+<p>下面是这个栈帧的示意图。此外, 这里有篇<a target="_blank" rel="noopener" href="https://www.stormshield.com/news/playing-with-signals-an-overview-on-sigreturn-oriented-programming/">文章</a>, 通过gdb调试探究了栈帧的结构, 值得一读。</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/srop-stack.png" alt="进入信号处理函数时栈的结构"></p>
+<p>这个图片是我从别人的博客上扣下来的, 实际上黄色的那部分是<code>sigaction</code>设置中的<code>sa_restorer</code>函数的地址, 在我们使用glibc编程时, 我们其实是没法自定义<code>sa_restorer</code>的(即使我们设置成自己的, glibc也会用自己设计好的restorer代码, 可见, <code>struct sigaction</code>的<code>sa_restorer</code>是冗余字段, 没有任何意义的嘛!), 这个代码很简单, 只是简单的几行汇编, 如下:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">__restore_rt:</span><br><span class="line">	mov $<span class="number">15</span>, %rax</span><br><span class="line">	syscall</span><br></pre></td></tr></table></figure>
+
+<p>可见, 它只是调用了15号系统调用<code>sigreturn</code>, 内核会弹出栈帧中的信息, 并用来为进程设置新的上下文, 此外, 栈帧中保存的信号屏蔽字也将被恢复。</p>
+<p>这种原子操作很适合做跳转, 它能原子性地设置信号屏蔽字并执行跳转, 是很牛的系统调用, 通过精心设计的栈帧, 它能跳转到任何地方, 并原子地设置信号屏蔽字, 这不就是在用户态模拟内核态的硬件中断吗?</p>
+<h3 id="神秘的第三个参数"><a href="#神秘的第三个参数" class="headerlink" title="神秘的第三个参数:"></a>神秘的第三个参数:</h3><p>我们注意到<code>sa_sigaction</code>, 也就是<code>sigaction</code>的信号处理函数签名如下:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span>(*) (<span class="type">int</span>, <span class="type">siginfo_t</span> *, <span class="type">void</span> *)</span><br></pre></td></tr></table></figure>
+
+<p>其中第一个参数是信号的号码, 比如9代表<code>SIGKILL</code>。</p>
+<p>第二个参数为信号自身附带的信息, 比如我们知道, 一个支持多任务的shell程序能够获悉任务的运行情况, 看下面的测试:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">markity@mycom ~/D/Blog (main)&gt; cat &amp;</span><br><span class="line">markity@mycom ~/D/Blog (main)&gt; fish: Job <span class="number">1</span>, <span class="string">&#x27;cat &amp;&#x27;</span> has stopped</span><br></pre></td></tr></table></figure>
+
+<p>既然shell能获得子进程的执行情况, 那么必然是内核提供的某种通知机制。好吧, 其实这个机制的秘密就是这个第二个参数, 里面有<code>SIGCHLD</code>信号的专属信息(当然其它类型的信号也有专属的额外信息), 比如进程id, 这里不过多展开, 点到为止。</p>
+<p>第三个参数, 也是最神秘的参数, 其实它真实的类型不是<code>void *</code>, 它其实是<code>ucontxt_t *</code>, 它经过严谨的设计, 它其实就是栈帧的地址。这个参数可以让我们自己修改栈帧, 从而跳转到别的地方去。但如果我们不修改它, 那么栈帧就不会被修改, 最终返回时就会跳转到被中断的原处。下面的程序尝试修改这个结构, 不跳转回原来的地方, 而是跳转到另外的地方。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ucontext.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">restore_here</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;哈哈\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">sighandler</span><span class="params">(<span class="type">int</span> signo, <span class="type">siginfo_t</span> *info, <span class="type">void</span> *ctx)</span> &#123;</span><br><span class="line">    makecontext(ctx, restore_here, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">stack_t</span> s;</span><br><span class="line">    s.ss_flags = <span class="number">0</span>;</span><br><span class="line">    s.ss_size = <span class="number">40000</span>;</span><br><span class="line">    s.ss_sp = <span class="built_in">malloc</span>(<span class="number">40000</span>);</span><br><span class="line">    sigaltstack(&amp;s, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">action</span>;</span></span><br><span class="line">    action.sa_flags = SA_SIGINFO|SA_ONSTACK;</span><br><span class="line"></span><br><span class="line">    sigfillset(&amp;action.sa_mask);</span><br><span class="line">    action.sa_sigaction = sighandler;</span><br><span class="line">    sigaction(SIGINT, &amp;action, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行时, 按<code>CTRL+C</code>, 打印<code>哈哈\n</code>后退出。如果熟悉<code>ucontext</code>应该能理解这个程序, 如果不太熟悉可以查下<code>ucontext</code>这个设施, 也可以阅读<a target="_blank" rel="noopener" href="https://markity.github.io/2023/02/18/co/">此篇</a>查看<code>ucontext</code>怎么使用。</p>
+<h3 id="如何重启系统调用"><a href="#如何重启系统调用" class="headerlink" title="如何重启系统调用?"></a>如何重启系统调用?</h3><p>下面是一段代码, 中断后它总能恢复之前的系统调用, 无论我们按多少次<code>CTRL+C</code>, 程序也不结束:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/select.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ucontext.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">sighandler</span><span class="params">(<span class="type">int</span> signo, <span class="type">siginfo_t</span> *info, <span class="type">void</span> *ctx)</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">stack_t</span> s;</span><br><span class="line">    s.ss_flags = <span class="number">0</span>;</span><br><span class="line">    s.ss_size = <span class="number">40000</span>;</span><br><span class="line">    s.ss_sp = <span class="built_in">malloc</span>(<span class="number">40000</span>);</span><br><span class="line">    sigaltstack(&amp;s, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">action</span>;</span></span><br><span class="line">    action.sa_flags = SA_SIGINFO|SA_ONSTACK|SA_RESTART;</span><br><span class="line"></span><br><span class="line">    sigfillset(&amp;action.sa_mask);</span><br><span class="line">    action.sa_sigaction = sighandler;</span><br><span class="line">    sigaction(SIGINT, &amp;action, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    getchar();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>相反, 下面这个程序按<code>CTRL+C</code>就直接结束了:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/select.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ucontext.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">sighandler</span><span class="params">(<span class="type">int</span> signo, <span class="type">siginfo_t</span> *info, <span class="type">void</span> *ctx)</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">stack_t</span> s;</span><br><span class="line">    s.ss_flags = <span class="number">0</span>;</span><br><span class="line">    s.ss_size = <span class="number">40000</span>;</span><br><span class="line">    s.ss_sp = <span class="built_in">malloc</span>(<span class="number">40000</span>);</span><br><span class="line">    sigaltstack(&amp;s, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">action</span>;</span></span><br><span class="line">    action.sa_flags = SA_SIGINFO|SA_ONSTACK|SA_INTERRUPT;</span><br><span class="line"></span><br><span class="line">    sigfillset(&amp;action.sa_mask);</span><br><span class="line">    action.sa_sigaction = sighandler;</span><br><span class="line">    sigaction(SIGINT, &amp;action, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    getchar();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所以, <code>sa_flags</code>中的<code>SA_RESTART</code>可以告知内核, 中断恢复后是否重启系统调用。这个重启的原理是什么呢?</p>
+<p>在发生信号中断后, 内核能根据<code>task_struct</code>的信息判断此进程对某个中断的处理策略, 如果对此信号采取重启系统调用的策略, 那么内核会在设置信号处理函数的栈帧时编辑一下<code>rip</code>的值, 使之回到<code>syscall</code>那一行。比如在我的<code>x86_64</code>架构下, <code>syscall</code>指令占了两个字节, 那么设置栈帧时, <code>rip</code>就会被设置为<code>origin_rip-2</code>, 从而在<code>sigreturn</code>跳转时, 回到<code>syscall</code>指令的那一行。从<a target="_blank" rel="noopener" href="https://www.halolinux.us/process-manager/restarting-an-interrupted-system-call.html">这里</a>可以找到线索。</p>
+<h3 id="意义"><a href="#意义" class="headerlink" title="意义?"></a>意义?</h3><p>了解了<code>sigreturn</code>系统调用, 我们可以更优雅地了解阻止信号处理函数重入的原理, 从而写出不可能发生重入的平坦化的代码。之前的<a target="_blank" rel="noopener" href="https://markity.github.io/2023/02/18/co/">文章</a>中, 我们用<code>swapcontext</code>做了上下文切换。然而<code>swapcontext</code>和<code>setcontext</code>很拉跨, 它先调用<code>setprocmask</code>, 再设置了<code>rip</code>寄存器进行跳转, 在极端情况下, 这就可能重入。然而, 有了<code>sigreturn</code>, 就能规避这个风险, 那就很完美了!</p>
+<h3 id="继续阅读下一篇"><a href="#继续阅读下一篇" class="headerlink" title="继续阅读下一篇"></a>继续阅读下一篇</h3><p><a target="_blank" rel="noopener" href="https://markity.github.io/2023/02/26/sigreturn2/">信号处理函数是如何返回的(2)?</a></p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
+<li><a target="_blank" rel="noopener" href="https://www.stormshield.com/news/playing-with-signals-an-overview-on-sigreturn-oriented-programming/">sigreturn-orient攻击概览, sigreturn原理探究</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.halolinux.us/process-manager/restarting-an-interrupted-system-call.html">被中断的系统调用如何重启?</a></li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tags-none-link" href="/tags/security/" rel="tag">security</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

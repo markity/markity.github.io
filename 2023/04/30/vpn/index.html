@@ -1,0 +1,430 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>科学上网的多种实现方法(玩法1-tun全局代理) | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="前言好久没写东西了, 最近研究了各种vpn的实现方法。这次我打算写一个系列, 谈点常用的科学上网技术。这个系列主要讨论两种科学上网的实现方法: 即tun和socks5。
+quic协议的出现让http代理日渐式微, 因此就不研究它了😁。">
+  
+  <meta name="description" content="前言好久没写东西了, 最近研究了各种vpn的实现方法。这次我打算写一个系列, 谈点常用的科学上网技术。这个系列主要讨论两种科学上网的实现方法: 即tun和socks5。 quic协议的出现让http代理日渐式微, 因此就不研究它了😁。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="科学上网的多种实现方法(玩法1-tun全局代理)">
+<meta property="og:url" content="http://example.com/2023/04/30/vpn/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="前言好久没写东西了, 最近研究了各种vpn的实现方法。这次我打算写一个系列, 谈点常用的科学上网技术。这个系列主要讨论两种科学上网的实现方法: 即tun和socks5。 quic协议的出现让http代理日渐式微, 因此就不研究它了😁。">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/netfilter.png">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/netfilter2.jpg">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/mtu.jpg">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/ping.png">
+<meta property="article:published_time" content="2023-04-29T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-09-15T15:45:06.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="太好玩了">
+<meta property="article:tag" content="network">
+<meta property="article:tag" content="vpn">
+<meta property="article:tag" content="go">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/netfilter.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/04/30/vpn/">
+  <time datetime="2023-04-29T16:57:55.000Z">
+    2023-04-30
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">科学上网的多种实现方法(玩法1-tun全局代理)</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>好久没写东西了, 最近研究了各种vpn的实现方法。这次我打算写一个系列, 谈点常用的科学上网技术。这个系列主要讨论两种科学上网的实现方法: 即tun和socks5。</p>
+<p>quic协议的出现让http代理日渐式微, 因此就不研究它了😁。</p>
+<span id="more"></span>
+
+<p>此篇研究tun全局代理, 说的问题很多很宽泛。有以下几个探讨的点:</p>
+<ul>
+<li>网卡设备和虚拟网卡设备</li>
+<li>lo网卡和127.0.0.1</li>
+<li>路由表</li>
+</ul>
+<p>其实这篇文章严重偏题, 大量的篇幅都是在研究路由表, 但tun全局代理的本质就是折腾路由表, 因此我认为这是值得的。</p>
+<p>tun全局代理的完整实现已经上传到github, 链接放在文章最后。</p>
+<blockquote>
+<p>对tun全局代理只讨论linux下的实现, 这样做的目的是减少噪点关注具体实现(此外也能节省我一点时间😃)。</p>
+</blockquote>
+<h3 id="网卡-网络接口-路由表"><a href="#网卡-网络接口-路由表" class="headerlink" title="网卡?网络接口?路由表?"></a>网卡?网络接口?路由表?</h3><p>在描述tun之前, 我们先来回顾下一个c语言程序如何与服务器进行tcp通讯, 建立一点基本常识:</p>
+<ol>
+<li>首先, 我们需要使用socket函数创建一个套接字, socket函数返回一个文件描述符fd代指这个套接字</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">socketFD = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>接下来我们指定下服务器的ip和port, 作为参数传递给connect函数, connect时内核协议栈会一顿操作以完成三次握手</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="type">int</span> iRemoteAddr = <span class="number">0</span>;</span><br><span class="line">inet_pton(AF_INET, <span class="string">&quot;127.0.0.1&quot;</span>, &amp;iRemoteAddr);</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">stRemoteAddr</span> =</span> &#123;<span class="number">0</span>&#125;;</span><br><span class="line">stRemoteAddr.sin_family = AF_INET;</span><br><span class="line">stRemoteAddr.sin_port = htons(<span class="number">8080</span>);</span><br><span class="line">stRemoteAddr.sin_addr.s_addr=iRemoteAddr;</span><br><span class="line"></span><br><span class="line">connect(iSocketFD, (<span class="type">void</span> *)&amp;stRemoteAddr, <span class="keyword">sizeof</span>(stRemoteAddr));</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>然后我们就能使用read, write与服务器进行正常的通讯了</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">read(socketFD, buf, <span class="number">256</span>);</span><br><span class="line">write(socketFD, buf, <span class="number">256</span>);</span><br></pre></td></tr></table></figure>
+
+<p>程序员按照上面的步骤建立一个tcp连接并进行通讯, 一切看起来都是那么简单。然而对于初学者, 其实大多不知道中间具体发生了什么。下面具体谈一谈。</p>
+<p>举一个例子, 现在开一个本地tcp服务, 它监听的ip是127.0.0.1, port是8080。我们再开一个客户端连接127.0.0.1:8080, 做一些通信。</p>
+<p>用wireshark抓包可以看到这些ip包走了lo网卡(loopback的缩写), src为127.0.0.1:34962, dest为127.0.0.1:8080。(在wireshark里面选中Loopback: lo可以查看到这些ip包)。</p>
+<blockquote>
+<p>此处网卡又可以被叫做网络接口</p>
+</blockquote>
+<p>然而, 当客户端连接110.242.68.66:80(百度的服务器ip)时。用wireshark抓包, 将看到ip包走了wlan0网卡(因为我正在用wifi上网), src&#x3D;wlan0的网卡ip, 端口号是一个随机值(我的是10.17.101.27), dest即为110.242.68.66:80。</p>
+<p>我们可以认为, 每张网卡都有一套自己的驱动程序, “走某张网卡”, 就是说由这张网卡的驱动程序处理此ip包。访问127.0.0.1时由lo的驱动程序处理, 访问baidu的ip时由wlan0的驱动程序处理。</p>
+<p>值得一提的是, 作为客户端不需要自己绑定端口, 一般让内核自己选择, 比如上面提到的34962就是内核自行选择的一个空闲端口。</p>
+<p>为何connect不同的ip包会把逻辑交给不同的网络接口处理呢?其实这都是路由表决定的, 使用<code>ip route show table all</code>命令可以看到这张表:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">default via 10.17.0.1 dev wlan0 proto dhcp src 10.17.101.27 metric 600 </span><br><span class="line">10.17.0.0/16 dev wlan0 proto kernel scope link src 10.17.101.27 metric 600 </span><br><span class="line">local 10.17.101.27 dev wlan0 table local proto kernel scope host src 10.17.101.27 </span><br><span class="line">broadcast 10.17.255.255 dev wlan0 table local proto kernel scope link src 10.17.101.27 </span><br><span class="line">local 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1 </span><br><span class="line">local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>为了简便起见, 上边的输出我们只保留了ipv4的相关路由。这张路由表是哪里来的? 如何进行配置的, 这和dhcp协议有关, 这里不做太多展开</p>
+</blockquote>
+<p>我们可以从上面的表得到以下信息:</p>
+<ul>
+<li>默认路由到wlan0网卡, 网卡的ip是10.17.101.27。网关ip为10.17.0.1</li>
+<li>10.17.0.0&#x2F;16路由到wlan0网卡</li>
+<li>127.0.0.0&#x2F;8网段路由到lo网卡</li>
+<li>wlan0网卡开启了dhcp, 从路由器自动分配ip, 路由表的一些配置也和dhcp有关(dhcp不是我们现在要研究的东西, 不过多展开)</li>
+</ul>
+<p>客户端连接走哪张网卡完全取决与这张路由表。127.0.0.1这个ip匹配了<code>local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1</code>这个条目, 因此网络接口为lo。baidu的ip没有任何一条匹配, 走默认的wlan0网卡, 且这里设置了网关, 到时候wlan0发出ip包的时候将设置目标mac地址为网关的mac地址, 然后网关做一个snat, 就把ip包发送到互联网上去了。</p>
+<blockquote>
+<p>这里“走哪张网卡”是什么意思呢? 无它, 就是说connect先根据路由表匹配的条目自动bind网卡的ip(这里是127.0.0.1)并随机bind一个空闲的port。随即connect就会发出相应的握手ip包。成功建立起连接后write socket也会产生ip报文, 这些报文的src都是127.0.0.1。</p>
+</blockquote>
+<p>还有一点值得注意的是, 路由表总是粒度小的优先。比如127.0.0.1这个ip同时匹配到了<code>local 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1</code>和<code>local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1</code>, 但是由于后者更小, 所以后者优先(虽然对于这个例子它俩谁优先都是等效的, 但是这个优先级值得注意, 之后我们需要用到这个规则)。</p>
+<h3 id="loopback网卡-内核协议栈"><a href="#loopback网卡-内核协议栈" class="headerlink" title="loopback网卡?内核协议栈?"></a>loopback网卡?内核协议栈?</h3><p>作为应用程序, 我们一般通过socket建立与对端进行tcp或udp通讯。比如对于tcp的socket, connect或write时, 其实就是在指挥内核协议栈生成对应的ip包, 并递交给对应的网卡驱动, 网卡驱动做进一步的处理, 不同的网卡驱动会做不同的处理。</p>
+<p>举个例子, 作为客户端, 我们连接上了127.0.0.1:8000的tcp服务, 那么客户端读写fd其实就是让内核协议栈产生ip报文。内核协议栈产生了相应的ip报文后就交给lo网卡驱动(因为内核协议栈知道路由表的内容, 自然知道这个ip包将递交给lo网卡驱动)。</p>
+<p>lo网卡是一张虚拟的网卡, 它不对应一个物理介质。当报文递交给它的网卡驱动时, 它不会将包递交给真实的网卡设备发出, 而是简单地在协议栈里面“周转”, 这里“周转“的意思就是递交给本机, 也可以被称作”发回“给内核协议栈(这就契合了它的英文全称: loop back)。</p>
+<p>比如我们的客户端向socket发送消息, 相关的ip包(不管是tcp还是udp)将会在内核协议栈产生。根据路由表, src&#x3D;127.0.0.1:34962, dest&#x3D;127.0.0.1:8080的ip包就会经由内核协议栈递交给lo网卡驱动, 拿到内核协议栈递交的ip包后, 这个驱动会直接将这个ip包写回到内核协议栈, 内核协议栈直接与应用程序进行信息交流, 此时服务端的socket程序能够从内核协议栈读到字节流。</p>
+<p>刚才说了客户端, 先来来谈论下服务端, 作为服务端, 我们需要做下面的操作来建立一个tcp服务器并与客户端进行通讯:</p>
+<ol>
+<li>首先用socket函数创建一个套接字, 返回的fd代表此套接字</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iSocketFD = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>调用bind给这个套接字绑定一个ip和port, 这里我们选择127.0.0.1:8080</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">stLocalAddr</span> =</span> &#123;<span class="number">0</span>&#125;;</span><br><span class="line">stLocalAddr.sin_family = AF_INET;</span><br><span class="line">stLocalAddr.sin_port = htons(<span class="number">8080</span>);</span><br><span class="line">stLocalAddr.sin_addr.s_addr=inet_pton(AF_INET, <span class="string">&quot;127.0.0.1&quot;</span>, &amp;stLocalAddr);</span><br><span class="line"></span><br><span class="line">bind(iSocketFD, (<span class="type">void</span> *)&amp;stLocalAddr, <span class="keyword">sizeof</span>(stLocalAddr));</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>然后我们调用listen, 监听某个网卡的tcp请求</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">listen(iSocketFD, BACKLOG);</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>接下来调用accept等待一个连接的到来, 然后我们就能拿到连接的fd了</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">stRemoteAddr</span> =</span> &#123;<span class="number">0</span>&#125;;</span><br><span class="line">new_fd = accept(iSocketFD, (<span class="type">void</span> *)&amp;stRemoteAddr, &amp;socklen);</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li>对fd进行读写, 就能与客户端进行通讯了</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">read(new_fd, buf, <span class="number">256</span>);</span><br><span class="line">write(new_fd, buf, <span class="number">256</span>);</span><br></pre></td></tr></table></figure>
+
+<p>这里服务端也与lo网卡建立起的关系(通过bind), 它将接收来自lo网卡的消息, lo网卡收到客户端发送的消息并进行loopback, 我们的服务端就能收到这些被“发回“的消息, 拿到这些ip包进行三次握手就能进行连接。accept完成后三次握手随即完成, 客户端服务端之间就能用读写正常进行通信了。</p>
+<p>我们作为后端, 在服务器上跑项目的时候, 会把ip设置成0.0.0.0。这个ip是一个特殊的标志, 它代表绑定所有的网卡(包括lo), 这样当外部请求从不同网卡进入时, 都能正常连接通讯。至于是从拿个网卡进入的, 可以通过相关接口进行查询, go语言提供了<code>LocalAddr</code>查询。</p>
+<p>研究到这里也解开了我的一个心结, 我以前一直会好奇为啥我用go写的http api server的listen ip设置成127.0.0.1就只能本机访问?为啥设置成0.0.0.0就能通过公网ip访问了呢?为啥设置成公网ip会报错?为啥设置成内网ip就能工作?为啥设置成0.0.0.0也能通过127.0.0.1访问。如今研究到这里, 一切都豁然开朗了。</p>
+<p>实际上, lo网卡不是真正的网卡, 它是用于本机测试内核协议栈功能的虚拟网卡, 对debug和测试程序有很大的帮助。在我的机器上, 真正的网卡是wlan0(无线的)和enp49s0(有线的), 网卡的信息可以通过<code>ifconfig</code>命令查询到:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">enp49s0: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500</span><br><span class="line">        ether 88:a4:c2:c5:cc:a5  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line">lo: flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536</span><br><span class="line">        inet 127.0.0.1  netmask 255.0.0.0</span><br><span class="line">        inet6 ::1  prefixlen 128  scopeid 0x10&lt;host&gt;</span><br><span class="line">        loop  txqueuelen 1000  (Local Loopback)</span><br><span class="line">        RX packets 4812  bytes 380140 (371.2 KiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 4812  bytes 380140 (371.2 KiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line"></span><br><span class="line">wlan0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet 10.17.101.27  netmask 255.255.0.0  broadcast 10.17.255.255</span><br><span class="line">        inet6 fe80::67e3:6e8:c207:4690  prefixlen 64  scopeid 0x20&lt;link&gt;</span><br><span class="line">        ether 84:7b:57:42:a7:02  txqueuelen 1000  (Ethernet)</span><br><span class="line">        RX packets 20306  bytes 7296153 (6.9 MiB)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 2396  bytes 2175242 (2.0 MiB)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>值得注意的是lo网卡没有mac地址, 这和tun是一样的, tun也是像lo一样的没有mac地址的虚拟网卡</p>
+</blockquote>
+<h3 id="与自己本机的网卡ip通讯-发生了什么"><a href="#与自己本机的网卡ip通讯-发生了什么" class="headerlink" title="与自己本机的网卡ip通讯, 发生了什么?"></a>与自己本机的网卡ip通讯, 发生了什么?</h3><p>我的上网网卡wlan0的ip是10.17.101.27。我可以开启一个服务, ip:port为10.17.101.27:8080。</p>
+<p>此时开启一个客户读连接10.17.101.27, 我们能正常与服务端进行通讯。那么这里又有什么样的逻辑呢?</p>
+<p>其实这样能行得通, 根本原因是对于src&#x3D;网卡本身的ip时有个特殊的逻辑。这个逻辑就是对于一般的ip包, 内核协议栈不会把它递交给网卡进行发送, 而是像lo网卡一个“发回”ip包, 这样也就不难理解为什么与自己的网卡通讯能行得通这件事了。</p>
+<p>然而对于icmp的ping包, 如果src&#x3D;网卡本身的ip, 那么内核协议栈自己处理, 产生应答包后写回内核协议栈, 这样应用程序就能够读取到响应包了。</p>
+<p>上面的讨论解释了为什么我们ping 127.0.0.1和10.17.101.27(我自己的上网网卡)能ping通, 解答了我多年以来的一个疑惑😃。</p>
+<h3 id="真实网卡比如wlan0"><a href="#真实网卡比如wlan0" class="headerlink" title="真实网卡比如wlan0"></a>真实网卡比如wlan0</h3><p>如果客户端要连接到baidu, 内核协议栈产生相应的ip报文后, 根据路由表, 这些报文将交给wlan0的驱动进行发送。创建套接字connect baidu后, wlan0的内核协议栈会将ip包从真实的物理网卡发出。</p>
+<p>与lo网卡不同的是, lo会将ip报文发送回内核协议栈。而wlan0驱动只管发送到物理网卡上, 而不写回内核协议栈。</p>
+<p>如果外界的ip包通过某种物理信号进入wlan0网卡, 通过硬件中断, wlan0的驱动程序首先拿到这个ip包。网卡驱动首先要甄别dest mac地址是否等于自己的mac。如果相等那么wlan0的驱动程序会将这个ip包递交给内核协议栈。</p>
+<p>当然也有一个例外的情况, 如果设置网卡的模式为混杂模式, 那么无论mac是否相等, 都会递交给内核协议栈。为了安全, 一些公司严禁员工网卡开启混杂模式, 以免侦听到别人的ip包。</p>
+<blockquote>
+<p>如果要设置网卡为混杂模式, 可以使用ip link命令进行相关设置, 这个命令不光可以设置混杂模式, 还能设置虚拟网卡的mtu, 或者开启关闭某张网卡</p>
+</blockquote>
+<h3 id="情景分析-加深印象"><a href="#情景分析-加深印象" class="headerlink" title="情景分析, 加深印象:"></a>情景分析, 加深印象:</h3><p>ip报文是如何导航到某个网卡设备的设备驱动的呢? 答案很简单, 当内核协议栈产生ip报文后, 通过src匹配路由表里面的条目确定哪张网卡的设备驱动来收这个ip报文。下面用伪代码列举两个场景:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">场景1:</span><br><span class="line"></span><br><span class="line">sock = CreateSocket();</span><br><span class="line">connect(sock, 127.0.0.1:8080)</span><br><span class="line"></span><br><span class="line">connect到dest=127.0.0.1:8080的时候, 根据dest ip=127.0.0.1, 路由表里面精确匹配到了lo网卡, 因此此socket自动bind ip=127.0.0.1, port=一个空闲的端口34962。</span><br><span class="line"></span><br><span class="line">之后connect将让内核协议栈产生三次握手的ip报文(src=127.0.0.1:34962, dest=127.0.0.1:8080)。由于此ip报文src=127.0.0.1, 根据路由表, 精确匹配到lo网卡, 这个ip报文就递交给lo的设备驱动了。lo将把这个ip报文发回给内核协议栈。</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">场景2</span><br><span class="line"></span><br><span class="line">sock = CreateSocket();</span><br><span class="line">connect(sock, 110.242.68.66:80)</span><br><span class="line"></span><br><span class="line">connect到dest=110.242.68.66:80的时候, 根据dest ip=110.242.68.66, 只有默认路由能匹配到这个ip, 因此socket自动bind ip=10.17.101.27(上网网卡), port为一个空闲端口12345。</span><br><span class="line"></span><br><span class="line">之后connect将让内核协议栈产生三次握手的ip报文(src=10.17.101.27:12345, dest=110.242.68.66:80)。由于此报文src=10.17.101.27, 根据路由表, 精确匹配到wlan0网卡, 这个ip报文就递交给wlan0设备驱动了。wlan0将会把这个ip报文通过物理途径发出。</span><br></pre></td></tr></table></figure>
+
+<h3 id="tun是什么呢"><a href="#tun是什么呢" class="headerlink" title="tun是什么呢"></a>tun是什么呢</h3><p>计算机网络中常说的是五层协议包含: 应用层、运输层(tcp, udp)、网络层(ip)、数据链路层和物理层。tun全局代代理正是在三层(网络层, 可以理解为处理ip包的那层)做了手脚。</p>
+<p>tun和lo都是虚拟网卡。区别是tun一端连接的是内核协议栈, 一端连接的是应用程序。从内核协议栈read到的东西其实就是内核协议栈路由过来的ip包(这些ip包是通过路由表导航来到tun网卡的), write的ip报文, 就是我们要发送给内核协议栈的ip包, 之后内核协议栈会处理后把字节流递交给应用程序。</p>
+<p>现在我们现在创建一个tun设备来看看:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这里我们使用的water库, 它封装了linux的tun设备的一些相关逻辑, 我们直接拿来用。</span></span><br><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/songgao/water&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	tun, err := water.New(water.Config&#123;DeviceType: water.TUN&#125;)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	log.Printf(<span class="string">&quot;tun name = %v\n&quot;</span>, tun.Name())</span><br><span class="line">	b := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">1500</span>)</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		n, err := tun.Read(b)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(b[:n])</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出结果为tun0</span></span><br></pre></td></tr></table></figure>
+
+<p>运行上面的代码后, 我们需要启动这张网卡, 使用下面的命令(下面的tun0是程序打印的tun name, 请以输出为准):</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&gt; ip <span class="built_in">link</span> <span class="built_in">set</span> up dev tun0</span><br><span class="line">&gt; ifconfig tun0</span><br><span class="line">tun0: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet6 fe80::505d:b58b:8f12:e757  prefixlen 64  scopeid 0x20&lt;<span class="built_in">link</span>&gt;</span><br><span class="line">        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br></pre></td></tr></table></figure>
+
+<p>我们可以改写路由表, 让某些ip报文走tun设备, 当我们read tun时, 能拿到别的应用程序发往内核协议栈的ip包。当我们write tun时, 我们能够向内核协议栈发送ip包, 然后应用程序能够从内核协议栈读到这些消息。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt; ip addr add 192.0.0.1/24 dev tun0</span><br><span class="line">// 这条命令有两个功能, 一个是给网卡指定ip, 一个是创建路由把192.0.0.0/24路由到tun0虚拟网卡</span><br></pre></td></tr></table></figure>
+
+<p>上面的命令代表tun0网卡的ip地址为192.0.0.1, 且192.0.0.0&#x2F;24的ip地址都走tun0网卡。再次查看tun0的属性可以看到它拥有了自己的ip, 查看路由表, 多了一些别的信息:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&gt; ifconfig tun0</span><br><span class="line">tun0: flags=4305&lt;UP,POINTOPOINT,RUNNING,NOARP,MULTICAST&gt;  mtu 1500</span><br><span class="line">        inet 192.0.0.1  netmask 255.255.255.0  destination 192.0.0.1</span><br><span class="line">        inet6 fe80::505d:b58b:8f12:e757  prefixlen 64  scopeid 0x20&lt;link&gt;</span><br><span class="line">        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)</span><br><span class="line">        RX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        RX errors 0  dropped 0  overruns 0  frame 0</span><br><span class="line">        TX packets 0  bytes 0 (0.0 B)</span><br><span class="line">        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0</span><br><span class="line">&gt; ip route show table all</span><br><span class="line">default via 10.17.0.1 dev wlan0 proto dhcp src 10.17.101.27 metric 600 </span><br><span class="line">10.17.0.0/16 dev wlan0 proto kernel scope link src 10.17.101.27 metric 600 </span><br><span class="line">192.0.0.0/24 dev tun0 proto kernel scope link src 192.0.0.1                                             // 新条目</span><br><span class="line">local 10.17.101.27 dev wlan0 table local proto kernel scope host src 10.17.101.27 </span><br><span class="line">broadcast 10.17.255.255 dev wlan0 table local proto kernel scope link src 10.17.101.27 </span><br><span class="line">local 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1 </span><br><span class="line">local 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1 </span><br><span class="line">broadcast 127.255.255.255 dev lo table local proto kernel scope link src 127.0.0.1 </span><br><span class="line">local 192.0.0.1 dev tun0 table local proto kernel scope host src 192.0.0.1                              // 新条目</span><br><span class="line">broadcast 192.0.0.255 dev tun0 table local proto kernel scope link src 192.0.0.1                        // 新条目</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>上面的ip route show table all同样省略了ipv6相关的路由, 以减少噪点</p>
+</blockquote>
+<p>然后我们能够看到, 在我们设置了ip后, 程序时不时会读到一些字节, 比如:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[96 0 0 0 0 8 58 255 254 128 0 0 0 0 0 0 43 122 88 196 209 105 83 70 255 2 0 0 0 0 0 0 0 0 0 0 0 0 0 2 133 0 212 72 0 0 0 0]</span><br></pre></td></tr></table></figure>
+
+<p>通过wireshark, 我得知这个是icmpv6包, src和dest都是ipv6的地址, 这里我个人不太懂ipv6的相关问题。我有以下疑问待解决:</p>
+<ul>
+<li>为什么tun0网卡被程序创建并setup后就有一个ipv6地址?</li>
+<li>为什么tun0网卡的这个ipv6地址时不时收到这个icmpv6包?</li>
+</ul>
+<p>接下来我们可以ping一下192.0.0.0&#x2F;24这个范围的一些ip, 看看程序能不能收到ip包:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; ping 192.0.0.8</span><br></pre></td></tr></table></figure>
+
+<p>ping后, 我们的程序每秒都能打印出一串字节, wireshark也能抓到相应的包, 验证了前文所提到的路由问题。</p>
+<h3 id="用tun类似下做个lo"><a href="#用tun类似下做个lo" class="headerlink" title="用tun类似下做个lo?"></a>用tun类似下做个lo?</h3><p>很简单, 我们提到了一个特殊逻辑: 对于src&#x3D;网卡本身的ip包, 它会像lo网卡一个”发回”ip包给内核协议栈。因此要做这件事情只要创建一个tun虚拟网卡, setup并指定ip即可:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;os/exec&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/songgao/water&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	tun, err := water.New(water.Config&#123;DeviceType: water.TUN&#125;)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	log.Printf(<span class="string">&quot;tun name = %v\n&quot;</span>, tun.Name())</span><br><span class="line"></span><br><span class="line">	exec.Command(<span class="string">&quot;ip&quot;</span>, <span class="string">&quot;link&quot;</span>, <span class="string">&quot;set&quot;</span>, tun.Name(), <span class="string">&quot;up&quot;</span>).Run()</span><br><span class="line">	exec.Command(<span class="string">&quot;ip&quot;</span>, <span class="string">&quot;addr&quot;</span>, <span class="string">&quot;add&quot;</span>, <span class="string">&quot;192.0.0.1&quot;</span>, <span class="string">&quot;dev&quot;</span>, tun.Name()).Run()</span><br><span class="line">	fmt.Scanln()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于服务端, 我们简单地开启一个gin server测试下:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;github.com/gin-gonic/gin&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	r := gin.New()</span><br><span class="line">	r.Run(<span class="string">&quot;192.0.0.1:8000&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过浏览器访问192.0.0.1:8000, 能得到404 not found的信息, 说明成功工作了。</p>
+<h3 id="客户端的路由表详解"><a href="#客户端的路由表详解" class="headerlink" title="客户端的路由表详解"></a>客户端的路由表详解</h3><p>有了上面路由的相关思路, 我们要做的第一件事就是把所有的ip都路由到自己创建的tun虚拟网卡上, 因为我们想让整个操作系统的网络操作都由tun设备接管, 因此这是必须的:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ip route add 0.0.0.0/1 dev tun0</span><br><span class="line">ip route add 128.0.0.0/1 dev tun0</span><br></pre></td></tr></table></figure>
+
+<p>这里有一个小技巧, 就是路由表中“粒度小”的优先, 我们这里这么设置路由其实相当于做了两段的路由:</p>
+<ol>
+<li>0.0.0.0～127.255.255.255路由到tun0</li>
+<li>128.0.0.0.1~255.255.255.255路由到tun0</li>
+</ol>
+<p>这样不会影响到之前配置的默认路由(default路由其实就是把0.0.0.0&#x2F;0路由到了wlan0设备上, 并且设置了相关网关)。而且这两个子网的粒度足够大, 不会影响到其他粒度较小的路由, 比如127.0.0.0&#x2F;8或10.17.0.0&#x2F;16这两条路由误会受影响。系统中默认配置的路由“粒度”较小, 我们配置的路由不会“伤及无辜”😃。</p>
+<blockquote>
+<p>我们需要了解的是, 当创建tun0设备的程序结束后, tun0会被清除, 此时所有路由到dev tun0的路由条目会被清除, 因此我们的程序结束后, 路由表将恢复原状, 不会影响到用户的之前配置</p>
+</blockquote>
+<p>配置了上面两段路由还不够。想想看, tun vpn的原理是客户端的tun设备拿取应用程序要发送的ip包, 然后转发给服务器, 服务器代为发出, 收到相应的响应报文后再递交给客户端。作为客户端, 至少要把得到的这些ip报文通过正常的网络途径wlan0发送给代理服务器, 因此我们需要增加一段路由:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt; DEFAULT_GW=$(ip route|grep default|<span class="built_in">cut</span> -d<span class="string">&#x27; &#x27;</span> -f3)</span><br><span class="line">&gt; ip route add 服务器ip via <span class="variable">$DEFAULT_GW</span></span><br></pre></td></tr></table></figure>
+
+<p>我们需要先拿到默认网关, 然后配置服务器的ip走默认网关, 通过用于上网的wlan0网卡发出。这样与服务端交互的ip包都能走正常的上网途径了, 这相当于开了条口子, ip如果不是服务端地址, 包都发给tun0; 如果是服务端的地址, 就通过wlan0与互联网正常通讯。</p>
+<h3 id="路由表里面的via"><a href="#路由表里面的via" class="headerlink" title="路由表里面的via?"></a>路由表里面的via?</h3><p>我们前面提到了网关, 它体现在了下面这个条目上:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">default via 10.17.0.1 dev wlan0 proto dhcp src 10.17.101.27 metric 600</span><br></pre></td></tr></table></figure>
+
+<p>via指定的就是下一跳。ip包由内核协议栈递交给wlan0驱动后, 驱动负责把这个ip包的mac地址改为10.17.0.1对应的网卡的mac地址, 并通过网卡的物理手段发送至物理世界。这时路由器10.17.0.1就能收到这个ip包, 然后路由器进行一个snat, 通过接入网发送到互联网上(家庭网络一般如此, 一般一个家庭只拥有一个公网ip, 内网设备要上网就需要路由器进行snat进行端口映射, 这样就能让多个设备共享一个公网ip上网了)。</p>
+<h3 id="服务端iptables配置详解"><a href="#服务端iptables配置详解" class="headerlink" title="服务端iptables配置详解:"></a>服务端iptables配置详解:</h3><p>运维人员可以通过iptables设置防火墙, 它是一个这样的架构(这是一个简化的架构, 真实的架构太复杂, 个人理解不多😢):</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX     Network    XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                                       +</span><br><span class="line">                                       |</span><br><span class="line">                                       v</span><br><span class="line"> +-------------+              +------------------+</span><br><span class="line"> |table: filter| &lt;---+        | table: nat       |</span><br><span class="line"> |chain: INPUT |     |        | chain: PREROUTING|</span><br><span class="line"> +-----+-------+     |        +--------+---------+</span><br><span class="line">       |             |                 |</span><br><span class="line">       v             |                 v</span><br><span class="line"> [   本机进程   ]     |           ****************          +--------------+</span><br><span class="line">       |             +---------+ 是否为本机的ip地址? +------&gt; |table: filter |</span><br><span class="line">       |                         ****************          |chain: FORWARD|</span><br><span class="line">       |                                                   +------+-------+</span><br><span class="line">       |                                                          |</span><br><span class="line">       |                                                          |</span><br><span class="line">       |                                                          |</span><br><span class="line">       v                       ****************                   |</span><br><span class="line">+-------------+       +------&gt; 根据路由表选择网络接口 &lt;---------------+</span><br><span class="line">|table: nat   |       |        ****************</span><br><span class="line">|chain: OUTPUT|       |               + </span><br><span class="line">+-----+-------+       |               |</span><br><span class="line">      |               |               v</span><br><span class="line">      v               |      +-------------------+</span><br><span class="line">+--------------+      |      | table: nat        |</span><br><span class="line">|table: filter | +----+      | chain: POSTROUTING|</span><br><span class="line">|chain: OUTPUT |             +--------+----------+</span><br><span class="line">+--------------+                      |</span><br><span class="line">                                      v</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX    Network     XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br></pre></td></tr></table></figure>
+
+<p>我们可以通过设置以下规则禁止外界访问本机80端口:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">// -I 代表insert, 它会插入到规则链的最上端, INPUT代表INPUT chain, -s是一个筛选条件, 代表src=网卡ip的ip包, -j 后面跟策略, 比如ACCEPT代表接受, DROP代表丢弃</span><br><span class="line">&gt; iptables -I INPUT -s 网卡ip -j DROP</span><br></pre></td></tr></table></figure>
+
+<p>那么这个策略是怎么工作的呢?现在做一个具体的阐述, 现在假设我的这张wlan0网卡的ip是10.17.101.27&#x2F;24, 这个内网上有另一台机子10.17.101.28打算与我机器上的80端口进行tcp连接:</p>
+<p>参考这张图:</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/netfilter.png" alt="包收发流程以及中间的netfilter钩子"></p>
+<ul>
+<li>另一台机子的网卡向我的wlan0网卡发送了握手的ip包</li>
+<li>产生硬件中断, 网卡接收到发来的ip包。非混杂模式下确认dest mac是自己的mac, 进行接收</li>
+<li>netfilter会看此ip包是否匹配nat表的PREROUTING某个规则, 并执行相关策略。然而这里我们没有配置任何规则, 因此这个ip报文不会发生任何改变</li>
+<li>接下来这个ip报文进入路径决定的阶段, 这个阶段此ip包是交给本机处理还是转发出去, 判断依据就是检查dest ip是否为本机的某个网卡ip。这里当然交给本机上游处理(因为dest ip是wlan0的网卡ip)</li>
+<li>接下来匹配filter表的INPUT规则, 此时这个ip包确实匹配到了这个规则, 因此netfilter简单地把这个包丢弃了。内核协议栈就拿不到这个ip报文了</li>
+</ul>
+<p>上面介绍了一个入站的流程, 就是: PREROUTING  –&gt;  INPUT  –&gt; PROCESS(进程)。要注意的是每张表都有一系列规则, 需要关注它们的顺序, 当第一条无法匹配的时候, 尝试匹配第二条, 依次类推, 表有个默认的policy, 如果一条也无法匹配, 那么策略就走这张表的默认policy。</p>
+<p>比如我们用下面的命令让外界只能访问到本机的22端口, 且只接收tcp的ip报文:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// -A 代表追加, 它会在表的末尾追加一条规则, -p 代表协议, 筛选tcp协议的报文, --dport 代表目的端口, 匹配端口号22</span><br><span class="line">&gt; iptables -t filter -A INPUT -p TCP --dport 22  -j ACCEPT</span><br><span class="line">&gt; iptables -t filter -A INPUT -p TCP -j DROP</span><br></pre></td></tr></table></figure>
+
+<p>类比下出站的流程就是: PROCESS(进程) –&gt;  OUTPUT –&gt; POSTROUTING。如果需要禁止本机某张网卡的某个端口的tcp出站流量可以用下面的命令:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -A OUTPUT -p tcp -s 网卡ip --sport 80 -j DROP</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>一般不会有人禁止出站流量。但是这其实是一个很现实的问题, 比如需要设置一个只允许访问某段网络的跳板机, 这其实就有用。</p>
+</blockquote>
+<p>还有一种流程是转发: PREROUTING  –&gt; FORWARD –&gt; POSTROUTING。我们看到架构图里面从网络进入的ip包先会进行一个<code>根据路由表选择网络接口</code>, 这就是在决定这个ip包的路径, 如果得知此ip报文的<code>dest ip</code>不属于本机的任何网卡, 那么就走转发的途径。转发有很多种策略, snat, dnat和伪装。其中我们需要用到伪装这个功能。</p>
+<blockquote>
+<p>这里有个常见的误区, 有人认为ip是网卡的固有属性, 如果外界的ip包发给网卡, 只要ip对不上号网卡就不收。其实不是这样的, mac和mtu才是网卡的固有属性, 网卡并不知道自己的ip地址。只要ip包里面的mac能对应上, 这张网卡就会把包收进来。因此就有了转发这么一回事。发包的时候, 即使ip不是网卡设置的ip, 也能由这张网卡发出。</p>
+</blockquote>
+<p>如果想让wlan0发出src不是10.17.101.27的ip报文, 需要在<code>根据路由表选择网络接口</code>之后给POSTROUTING添加snat规则就行。这样wlan0就能发出不属于自己ip的报文。</p>
+<h3 id="服务端客户端的交互逻辑"><a href="#服务端客户端的交互逻辑" class="headerlink" title="服务端客户端的交互逻辑"></a>服务端客户端的交互逻辑</h3><p>在我的实现中, 服务端有下面的iptables策略:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; sysctl -w net.ipv4.ip_forward=1</span><br><span class="line">&gt; iptables -t nat -A POSTROUTING -s 10.8.0.0/16 ! -d 10.8.0.0/16 -j MASQUERADE</span><br><span class="line">&gt; iptables -A FORWARD -s 10.8.0.0/16 -m state --state RELATED,ESTABLISHED -j ACCEPT</span><br><span class="line">&gt; iptables -A FORWARD -d 10.8.0.0/16 -j ACCEPT</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>要启动forward功能, 需要开启内核的相关配置, 用sysctl -w net.ipv4.ip_forward&#x3D;1这条命令进行开启。</p>
+</blockquote>
+<p>服务端与客户端进行连接后做了以下操作:</p>
+<ol>
+<li>服务端生成了两个ip, 一个是10.8.0.1, 一个是10.8.0.2, 其中10.8.0.2通过连接发送给了客户端。</li>
+<li>然后服务端创建tun0设备, 设置它的ip为10.8.0.1</li>
+<li>随后, 服务端新增了一条路由:</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; ip route add 10.8.0.2/32 dev tun0</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>接下来服务端要做的就是不断从tun0读, 写入conn, 并且不断从conn读写入tun</li>
+</ol>
+<p>客户端与服务端连接后进行了以下操作:</p>
+<ol>
+<li>从conn收到10.8.0.2, 创建tun0, 指定它的ip为10.8.0.2</li>
+<li>建立三个路由, 如下:</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; ip route add 0.0.0.0/1 dev tun0</span><br><span class="line">&gt; ip route add 128.0.0.0/1 dev tun0</span><br><span class="line">&gt; DEFAULT_GW=$(ip route|grep default|<span class="built_in">cut</span> -d<span class="string">&#x27; &#x27;</span> -f3)</span><br><span class="line">&gt; ip route add 服务器ip via <span class="variable">$DEFAULT_GW</span></span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>接下来客户端不断从tun读, 写入conn, 不断从conn读, 写入tun</li>
+</ol>
+<h3 id="服务端的路由原理"><a href="#服务端的路由原理" class="headerlink" title="服务端的路由原理"></a>服务端的路由原理</h3><p>上面提到的代码逻辑如此简单, 巧妙的点就在路由表上。再次回顾iptables的逻辑:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX     Network    XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                                       +</span><br><span class="line">                                       |</span><br><span class="line">                                       v</span><br><span class="line"> +-------------+              +------------------+</span><br><span class="line"> |table: filter| &lt;---+        | table: nat       |</span><br><span class="line"> |chain: INPUT |     |        | chain: PREROUTING|</span><br><span class="line"> +-----+-------+     |        +--------+---------+</span><br><span class="line">       |             |                 |</span><br><span class="line">       v             |                 v</span><br><span class="line"> [   本机进程   ]     |           ****************          +--------------+</span><br><span class="line">       |             +---------+目的地址为本机的ip地址? +---&gt; |table: filter |</span><br><span class="line">       |                         ****************          |chain: FORWARD|</span><br><span class="line">       |                                                   +------+-------+</span><br><span class="line">       |                                                          |</span><br><span class="line">       |                                                          |</span><br><span class="line">       |                                                          |</span><br><span class="line">       v                       ****************                   |</span><br><span class="line">+-------------+       +------&gt; 根据路由表选择网络接口 &lt;---------------+</span><br><span class="line">|table: nat   |       |        ****************</span><br><span class="line">|chain: OUTPUT|       |               + </span><br><span class="line">+-----+-------+       |               |</span><br><span class="line">      |               |               v</span><br><span class="line">      v               |      +-------------------+</span><br><span class="line">+--------------+      |      | table: nat        |</span><br><span class="line">|table: filter | +----+      | chain: POSTROUTING|</span><br><span class="line">|chain: OUTPUT |             +--------+----------+</span><br><span class="line">+--------------+                      |</span><br><span class="line">                                      v</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX    Network     XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br></pre></td></tr></table></figure>
+
+<p>分析客户端访问baidu的发包收包全流程:</p>
+<p>发包过程:</p>
+<p>访问百度, 客户端的tun设备能收到应用程序发来的ip包(src&#x3D;10.8.0.2:12345, dest&#x3D;110.242.68.66:80)。这个ip包能从tun read出来, 然后这个ip包被发送给服务端。然后服务端将从conn收到此ip包后写入tun0, 此时</p>
+<p>客户端的tun设备能收到应用程序发来的ip包(src&#x3D;10.8.0.2:12345, dest&#x3D;110.242.68.66:80), 从tun读取后转发给服务端。服务端将从conn读到的ip包写入tun。</p>
+<p>这样相当于这个ip包从<code>Network</code>流入nat的PREROUTING那条路径进入, 相当于tun网卡收到了一个ip报文。由于nat的PREROUTING表没有做任何操作, 这个ip报文不变。</p>
+<p>接下来这个报文会被判断<code>目的地址为本机的ip地址</code>, 这里10.8.0.2当然不属于本机任何一张网卡的ip, 因此走FORWARD途径, 对于这个ip包, FORWARD同意转发, 它匹配了<code>iptables -A FORWARD -s 10.8.0.0/16 -m state --state RELATED,ESTABLISHED -j ACCEPT</code>。</p>
+<p>然后来到了<code>根据路由表选择网络接口</code>的步骤, 这个报文的<code>dest ip = 110.242.68.66</code>。那么根据路由表, 它走服务器的eth0发出。选择完毕, 这个网络接口就是eth0。</p>
+<p>然后来到nat的POSTROUTING这里。它匹配了<code>iptables -t nat -A POSTROUTING -s 10.8.0.0/16 ! -d 10.8.0.0/16 -j MASQUERADE</code>条目。这里的筛选条件是<code>src ip 属于 10.8.0.0/16 网段 且 dest ip 不属于 10.8.0.0/16网段</code>。这个ip包策略的策略是“伪装(MASQUERADE)”。这是一个自动化的SNAT, 它会将此ip报文的ip变化为eth0的ip(假如是192.168.0.1), 并做一个自动的端口映射(假如映射到了33321), 并记录下映射的关系以便收到回复报文的时候dnat转化回来。</p>
+<p>回包过程:</p>
+<p>然后baidu的服务器理应收到这个报文, 并做出回应, 经过一系列路由, 这个回应报文进入eth0网卡的设备驱动并通过物理途径发出(src&#x3D;110.242.68.66:80, dest&#x3D;192.168.0.1:33321)。</p>
+<p>接下来这个报文进入nat的PREROUTING匹配规则, 这里没有任何规则被匹配, 报文不变。</p>
+<p>重点来了, 在PREROUTING之后, 我们之前做的snat在这里将会被自动化地还原(即做一个DNAT)。之前记录下的“映射关系”能做到这点。因此ip报文直接被变化为dest&#x3D;10.8.0.2, port&#x3D;12345。</p>
+<p>ok, ip报文又来到了<code>目的地址为本机的ip地址</code>阶段, 然而很遗憾, dest&#x3D;10.8.0.2并不是服务端主机上任何一张网卡的ip, 因此回应包又走FORWARD途径。这次这个报文匹配了<code>iptables -A FORWARD -d 10.8.0.0/16 -j ACCEPT</code>规则, 因此同意转发。</p>
+<p>随后进入<code>根据路由表选择网络接口</code>阶段, dest&#x3D;10.8.0.2被路由到的tun0(根据<code>ip route add 10.8.0.2/32 dev tun0</code>这个路由条目)。这个ip报文就送给tun的设备驱动了, 我们能read tun拿到它。</p>
+<p>read tun拿到的报文即为baidu的相应报文, 服务端需要通过conn发送给客户端。</p>
+<p>客户端从conn read到的ip报文需要写入客户端的tun, 这样一来应用程序就能拿到了😃。</p>
+<h3 id="补充-MASQUERADE策略的具体步骤-gpt回答"><a href="#补充-MASQUERADE策略的具体步骤-gpt回答" class="headerlink" title="补充, MASQUERADE策略的具体步骤(gpt回答):"></a>补充, MASQUERADE策略的具体步骤(gpt回答):</h3><p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/netfilter2.jpg" alt="MASQUERADE策略的具体步骤"></p>
+<h3 id="网卡的mtu是什么"><a href="#网卡的mtu是什么" class="headerlink" title="网卡的mtu是什么?"></a>网卡的mtu是什么?</h3><p>开局一张图:</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/mtu.jpg" alt="mtu图例.jpeg"></p>
+<p>通过ifconfig, 我们得知每张网卡设备都有自己的MTU(max transport unit)。对于lo, 它是65536, wlan0和enp49s0则是1500。那么mtu是什么意思呢?</p>
+<p>MTU指一条链路上一个二层报文里面允许承载的二层以上报文的最大长度，单位为byte。</p>
+<p>现在我们创建一个udp套接字, 尝试发送一个大小为5000字节的udp包。内核协议栈将生成一个很大的ip报文(讓扩了5000字节的udp数据), 在<code>根据路由表选择网络接口</code>之后, 得知wlan0的mtu是1500, 此时则会对生成的udp包进行分片。浅看一下下面的ip报文结构:</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/ping.png" alt="ip报文"></p>
+<blockquote>
+<p>udp包搞这么大是不明智的, 这里只是出于演示的目的才这么做。</p>
+</blockquote>
+<p>那么, 原来“巨大的”的ip报文将会被分片, 分成若干个Identification相同的小ip报文。然后将这个小的报文递交给wlan0的设备驱动, 通过物理途径一个个发出。</p>
+<p>这些小ip报文通过路由器一个个到达对端, 对端负责将Identification相同的报文进行重组, 合并成一个完整的ip报文并递交给上游。这样应用层就能收到udp包了。</p>
+<p>发大udp包的后果就是udp报文很容易丢失, 期间如果任意一个分片丢失, 则视为整个udp包丢失。实际应用中一个udp报文的字节大小应该为576字节, 如此以来在整个传输途径中, 报文将不会再被分片。</p>
+<h3 id="路由器对mtu的处理"><a href="#路由器对mtu的处理" class="headerlink" title="路由器对mtu的处理:"></a>路由器对mtu的处理:</h3><p>上面讲到大包将会被分片成最大大小mtu的小报文发出。实际上网络途径中不是每个路由器的mtu都是1500, 在某些情况下会产生丢弃报文的情况。</p>
+<p>简而言之, 路由器有入端口和出端口:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">对于入端口:</span><br><span class="line">if 此报文承载的二层以上的报文长度 &gt; 入端口MTU:</span><br><span class="line">        丢弃该报文, 发回ICMP报文告知发送方</span><br><span class="line">else:</span><br><span class="line">    从入口接收该报文</span><br><span class="line"></span><br><span class="line">对于出端口:</span><br><span class="line">if 此报文承载的二层以上的报文长度 &gt; 出端口MTU:</span><br><span class="line">        if DF位为1:</span><br><span class="line">                丢弃报文, 发回ICMP报文告知发送方</span><br><span class="line">        else:</span><br><span class="line">                分片发送</span><br><span class="line">else:</span><br><span class="line">        直接转发报文</span><br></pre></td></tr></table></figure>
+
+<p>分片的细节:</p>
+<ul>
+<li><p>ip报文有DF(Don’t Fragment)位, 如果它为1则不允许进行分片, 此时报文进入路由器的入端口, 如果经过判断必须分片才能从出端口发出的话, 那么路由器就会丢弃这个报文。然后路由器会发回一个ICMP报文通知发送方, 里面包含了这个路由器的出口mtu。</p>
+</li>
+<li><p>网卡分片是DF为0, 通过MF(More Fragment)和Fragment offset字段配合标识该分片。比如如果网卡发出的一个大的udp报文被分成三个小的ip报文, 那么第一个ip报文的DF &#x3D; 0, MF &#x3D; 1, Fragment offset &#x3D; 0。第二个 DF &#x3D; 0, MF &#x3D; 1, Fragment offset &#x3D; 1。第三个 DF &#x3D; 0, MF &#x3D; 0, Fragment offset &#x3D; 2。这三个ip报文的Identification都是相同的。</p>
+</li>
+</ul>
+<p>需要知道的是, 互联网建设中, 两个相连的端口mtu总是相等的, 这是网络建设的一个原则, 比如路由器1-&gt;路由器2的这条路径中, 路由器1与路由器2的网卡通过网线连接, 这两张网卡的mtu相等。但是一个路由器的入端口MTU不一定等于出端口MTU, 如果DF位被设置了, 源主机发的报文需要小于这条网络途径的最小MTU才行。</p>
+<p>连接手机wifi热点时:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; ping -s 1400 -M do baidu.com</span><br><span class="line">PING baidu.com (39.156.66.10) 1400(1428) bytes of data.</span><br><span class="line">From _gateway (192.168.181.105) icmp_seq=1 Frag needed and DF set (mtu = 1400)</span><br><span class="line">ping: local error: message too long, mtu=1400</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这个错误的原因是经过路由器(ip为39.156.66.10)时, 报文太大而被丢弃。此时ICMP报文发回给发送方, 告知应该使用1400的mtu。此时recv报错message too long。遇到这个错误的时候, 应该调整发送的报文大小, 这样报文才能被接受者收到。要拿到当前的最小mtu, 可以通过ioctl拿到。但是路由器很多, 因此可能需要多次调整。这样前面的一些ip报文就会丢包, 直到报文的大小小于这条路径的最小mtu。</p>
+</blockquote>
+<p>连接校园网时:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; ping -s 1473 -M do baidu.com</span><br><span class="line">PING baidu.com (110.242.68.66) 1473(1501) bytes of data.</span><br><span class="line">ping: local error: message too long, mtu=1500</span><br><span class="line">ping: local error: message too long, mtu=1500</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这个错误的原因是产生的ip报文大小为1473+8(包含了时间的8个字节)+20(ip header) &#x3D; 1501, 而网卡的mtu是1500, 因此根本无法发出。自动分片只在使用tcp和udp时进行, 而ping程序使用ip socket, 自己产生的ip报文大于mtu时, 便无法发出。此时这个ip报文甚至没有经过网卡, 直接在内核协议栈进行一个判断就给recv那里产生一个message too long的错误。如果要追踪这个错误, 请使用strace ping -s 1473 -M do baidu.com, strace能追踪系统调用。</p>
+</blockquote>
+<p>那么我们访问网络, DF位到底有没有被设置呢? 答案是默认下开启的pmtu策略, 会导致tcp&#x2F;udp的报文的DF位被设置, 对于tcp我们不需要关心, 它的协议层已经考虑到pmtu了。但是对于udp, 我们需要自己确定路径的最小mtu, 需要我们积极地发报文进行测试, 在一定的丢包后通过ioctl拿到最小mtu。</p>
+<p>简而言之pmtu机制就是要求发出的报文设置DF位为1, 然后通过一定的丢包测试出此线路的最小mtu, 这样做能避免路由器二次分片。路由器分片很慢的, 会挤占很多资源, 因此自己找到最小mtu在源主机进行一次分片, 就不用路由器二次分片了。此外, 其实也可以使用小于pmtu的长度, 但是这样效率就低了, 设置成pmtu网速最快。</p>
+<p>我们可以手动关闭pmtu, 在linux下使用下面的命令:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt;/proc/sys/net/ipv4/ip_no_pmtu_disc  </span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>我奉劝大家不要这么做, 因为国内的路由器可能摆烂直接不给你二次分片, 地域性很大得不偿失。且使用pmtu策略网速更快, 建议开启pmtu。</p>
+</blockquote>
+<h3 id="客户端tun设备的mtu选择"><a href="#客户端tun设备的mtu选择" class="headerlink" title="客户端tun设备的mtu选择?"></a>客户端tun设备的mtu选择?</h3><p>在客户端, 我选择让tun设备的mtu等于1200。理由是我使用的dtls协议, 对于每个产生的ip报文都通过udp发出, 且需要进行加密。pmtu的最小值是1280, 因此最好保证加密后报文大小小于1280。因此最终我选择了1200作为tun设备的mtu。</p>
+<h3 id="github仓库地址"><a href="#github仓库地址" class="headerlink" title="github仓库地址"></a>github仓库地址</h3><p>点击<a target="_blank" rel="noopener" href="https://github.com/markity/go-proxy">此处</a></p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/go/" rel="tag">go</a>, <a class="tags-none-link" href="/tags/network/" rel="tag">network</a>, <a class="tags-none-link" href="/tags/vpn/" rel="tag">vpn</a>, <a class="tags-none-link" href="/tags/%E5%A4%AA%E5%A5%BD%E7%8E%A9%E4%BA%86/" rel="tag">太好玩了</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

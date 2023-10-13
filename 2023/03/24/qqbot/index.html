@@ -1,0 +1,184 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>用Go语言做一个QQ GPT机器人 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
+  
+  <meta name="description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用Go语言做一个QQ GPT机器人">
+<meta property="og:url" content="http://example.com/2023/03/24/qqbot/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot.png">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot2.jpg">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot3.png">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot4.jpg">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot5.jpg">
+<meta property="article:published_time" content="2023-03-23T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-09-15T15:48:12.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="太好玩了">
+<meta property="article:tag" content="robot">
+<meta property="article:tag" content="chatgpt">
+<meta property="article:tag" content="golang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/24/qqbot/">
+  <time datetime="2023-03-23T16:57:55.000Z">
+    2023-03-24
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">用Go语言做一个QQ GPT机器人</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="胡言乱语"><a href="#胡言乱语" class="headerlink" title="胡言乱语"></a>胡言乱语</h3><p>最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):</p>
+<span id="more"></span>
+
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot.png" alt="效果图1"></p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot2.jpg" alt="效果图2"></p>
+<p>它应该支持:</p>
+<ul>
+<li>冷却时间(CD)</li>
+<li>回复内容是markdown转换的图片, 且回复包含消息询问者的问题和询问者的昵称。且告知它CD时间。</li>
+</ul>
+<h3 id="实现方案制定"><a href="#实现方案制定" class="headerlink" title="实现方案制定"></a>实现方案制定</h3><p>1.首先需要一个qq机器人, 恰好有个开源的golang实现<a target="_blank" rel="noopener" href="https://github.com/Mrs4s/go-cqhttp">go-cqhttp</a>, 它的接口很友好, 用起来比较舒适。接口文档点击<a target="_blank" rel="noopener" href="https://docs.go-cqhttp.org">此处</a>进入。</p>
+<p>2.除了机器人, 我们还需要一个http处理程序, go-cqhttp收到消息时回调我们的http处理程序, 接收消息并做出响应。这里我们选择了<a target="_blank" rel="noopener" href="https://github.com/gin-gonic/gin">gin</a>作为开发框架。</p>
+<p>3.需要把chatgpt的markdown内容转化为图片, 如果我们询问gpt能否写一个golang的hello world程序, gpt的回答通常是这样的:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">当然可以！以下是一份简单的 Go 代码，可以输出 &quot;Hello, World!&quot;：</span><br><span class="line"></span><br><span class="line">```go</span><br><span class="line">package main</span><br><span class="line"></span><br><span class="line">import &quot;fmt&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">    fmt.Println(&quot;Hello, World!&quot;)</span><br><span class="line">&#125;</span><br><span class="line">```</span><br><span class="line"></span><br><span class="line">你可以将这段代码保存为 `hello.go` 文件，然后在终端中使用以下命令来编译并运行它：</span><br><span class="line"></span><br><span class="line">```</span><br><span class="line">go run hello.go</span><br><span class="line">```</span><br><span class="line"></span><br><span class="line">程序将输出 &quot;Hello, World!&quot; 到终端中。</span><br></pre></td></tr></table></figure>
+
+<p>也就是说, gpt的内容包含了markdown格式的内容, 最好把它渲染成图片。要实现这个, 我想到了以下思路:</p>
+<p>a.用公开的api接口, 比如vertopal, 但是接口可能不稳定, 而且做起来比较麻烦, 我们不用这种方法</p>
+<p>b.先用<a target="_blank" rel="noopener" href="https://github.com/russross/blackfriday/">blackfriday</a>先转成html格式, 然后把内容拼进一个比较好的html模板, 调用无头浏览器截图。这种方法很好, 能完美解决我们的问题, 且可定制度高。我们使用这种方法。</p>
+<p>c.用别人造好的轮子来截图网页, <a target="_blank" rel="noopener" href="https://github.com/sensepost/gowitness">gowitness</a>是个不错的选择。这个库知名度挺高, 目前有2k star, 而且支持很屌。既能作为cli工具, 又能开http服务, 功能特别强大。但是很可惜, 这个工具只能截图http&#x2F;https的网页, 不能截图本地html文件的图片。因此这个方法不行。</p>
+<h3 id="如何把markdown转换成html标签"><a href="#如何把markdown转换成html标签" class="headerlink" title="如何把markdown转换成html标签?"></a>如何把markdown转换成html标签?</h3><p>下面介绍了blackfriday(为什么名字是黑色星期五?)的基本玩法:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/russross/blackfriday/v2&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	fmt.Print(<span class="type">string</span>(blackfriday.Run([]<span class="type">byte</span>(<span class="string">&quot;### Hello World&quot;</span>))))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 打印: &lt;h3&gt;Hello World&lt;/h3&gt;\n</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="如何根据html生成图片文件"><a href="#如何根据html生成图片文件" class="headerlink" title="如何根据html生成图片文件?"></a>如何根据html生成图片文件?</h3><p>要调用无头浏览器, 用<a target="_blank" rel="noopener" href="https://github.com/chromedp/chromedp">chromedp</a>, 对比其它库, 它对chrome driver的支持好。下面是实现html转文件的代码:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;encoding/json&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/chromedp/chromedp&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	ctx, cancel := chromedp.NewContext(context.Background())</span><br><span class="line">	<span class="keyword">defer</span> cancel()</span><br><span class="line"></span><br><span class="line">	result := []<span class="type">byte</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">	chromedp.Run(ctx, fullScreenshot(<span class="string">&quot;file:///home/markity/Documents/Code/QQBot/program/example.html&quot;</span>, <span class="number">90</span>, &amp;result))</span><br><span class="line">	f, _ := os.Create(<span class="string">&quot;result.png&quot;</span>)</span><br><span class="line">	f.Write(result)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">fullScreenshot</span><span class="params">(urlstr <span class="type">string</span>, quality <span class="type">int</span>, res *[]<span class="type">byte</span>)</span></span> chromedp.Tasks &#123;</span><br><span class="line">	<span class="keyword">return</span> chromedp.Tasks&#123;</span><br><span class="line">		chromedp.Navigate(urlstr),</span><br><span class="line">		chromedp.FullScreenshot(res, quality),</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样就完全截图一个网页。我们要做的就是先拼接好网页, 然后调用无头浏览器截图就行了。</p>
+<h3 id="Bot-Hello-World-如何实现一个QQ群echo服务"><a href="#Bot-Hello-World-如何实现一个QQ群echo服务" class="headerlink" title="Bot Hello World: 如何实现一个QQ群echo服务?"></a>Bot Hello World: 如何实现一个QQ群echo服务?</h3><p>先来做个简单的hello world级别的echo服务。我们需要监听群员的消息, 如果有人at机器人并说一句话, 机器人就at此群员并回显他的话。要做到这样的echo服务, 我们需要编写go-cqhttp的http回调程序, 其中要做到以下几点：</p>
+<p>0.注意首先保证你已经配置好了go-cqhttp, 填好账号密码。填写好回调地址(即我们写的gin回调程序的url): 将<code>servers</code>-<code>http</code>-<code>post</code>修改如下, 我们的回调程序将运行在<code>http://127.0.0.1:8080</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">post:           # 反向HTTP POST地址列表</span><br><span class="line">- url: &#x27;http://127.0.0.1:8080&#x27;                # 地址</span><br><span class="line">#  secret: &#x27;&#x27;             # 密钥</span><br><span class="line">max-retries: 3         # 最大重试，0 时禁用</span><br></pre></td></tr></table></figure>
+
+<p>1.在go-cqhttp请求(post方法)我们的回调程序时, 先读出消息本体, 即解析一下json数据就行</p>
+<p>2.甄别回调的消息包类型, go-cqhttp有心跳包, 消息包等多种包, 我们需要的只有消息包。再甄别消息是否来自某个特定的群聊, 这里直接判断群聊号码就行了。再甄别用户是否at了机器人, 这里判断raw_message是否以<code>[CQ:at,qq=机器人QQ号]</code>开头就行了。这种<code>[CQ:xxx,xx=xxx]</code>叫CQ代码, 是qq的特殊消息类型, 包含at, qq表情, 图片, 表情包, 它会被qq客户端转义, 显示出特殊的内容。</p>
+<p>消息包也有私聊和群聊的区别, 这是一个群聊的json数据包, 此处过多展开太无聊了, 提一下得了, 要了解更多直接去看go-cqhttp的文档:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">	<span class="attr">&quot;post_type&quot;</span><span class="punctuation">:</span><span class="string">&quot;message&quot;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;message_type&quot;</span><span class="punctuation">:</span><span class="string">&quot;group&quot;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;time&quot;</span><span class="punctuation">:</span><span class="number">1679534793</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;self_id&quot;</span><span class="punctuation">:</span><span class="number">3402002560</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;sub_type&quot;</span><span class="punctuation">:</span><span class="string">&quot;normal&quot;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;message_seq&quot;</span><span class="punctuation">:</span><span class="number">894528</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;group_id&quot;</span><span class="punctuation">:</span><span class="number">805574759</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;message&quot;</span><span class="punctuation">:</span><span class="string">&quot;那你得帅，还得有身材&quot;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;raw_message&quot;</span><span class="punctuation">:</span><span class="string">&quot;那你得帅，还得有身材&quot;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;sender&quot;</span><span class="punctuation">:</span></span><br><span class="line">	<span class="punctuation">&#123;</span></span><br><span class="line">		<span class="attr">&quot;age&quot;</span><span class="punctuation">:</span><span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;area&quot;</span><span class="punctuation">:</span><span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;card&quot;</span><span class="punctuation">:</span><span class="string">&quot;萌小瓜&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;level&quot;</span><span class="punctuation">:</span><span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;nickname&quot;</span><span class="punctuation">:</span><span class="string">&quot;瓜瓜回去吧&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;role&quot;</span><span class="punctuation">:</span><span class="string">&quot;member&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;sex&quot;</span><span class="punctuation">:</span><span class="string">&quot;unknown&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;title&quot;</span><span class="punctuation">:</span><span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;user_id&quot;</span><span class="punctuation">:</span><span class="number">10174609</span></span><br><span class="line">	<span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;user_id&quot;</span><span class="punctuation">:</span><span class="number">10174609</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;message_id&quot;</span><span class="punctuation">:</span><span class="number">1775522907</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;anonymous&quot;</span><span class="punctuation">:</span><span class="literal"><span class="keyword">null</span></span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;font&quot;</span><span class="punctuation">:</span><span class="number">0</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>3.拿取用户的输入, 然后调用cq-http的相应http接口做出回应。</p>
+<p>下面是实现代码, 机器人的账号是3402002560, 群号是334903763, 程序里写死了:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;bytes&quot;</span></span><br><span class="line">	<span class="string">&quot;encoding/json&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;io&quot;</span></span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;net/http&quot;</span></span><br><span class="line">	<span class="string">&quot;strings&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/gin-gonic/gin&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 所有Event的公用字段</span></span><br><span class="line"><span class="keyword">type</span> EventHeaderStruct <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// unix事件戳</span></span><br><span class="line">	Time <span class="type">int64</span> <span class="string">`json:&quot;time&quot;`</span></span><br><span class="line">	<span class="comment">// message, message_sent, request, notice, meta_event</span></span><br><span class="line">	PostType <span class="type">string</span> <span class="string">`json:&quot;post_type&quot;`</span></span><br><span class="line">	<span class="comment">// 自身的QQ号</span></span><br><span class="line">	SelfID <span class="type">int64</span> <span class="string">`json:&quot;self_id&quot;`</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> sender <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// 私聊有下面四个字段</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// QQ号</span></span><br><span class="line">	UserID <span class="type">int64</span> <span class="string">`json:&quot;user_id&quot;`</span></span><br><span class="line">	<span class="comment">// 昵称</span></span><br><span class="line">	NickName <span class="type">string</span> <span class="string">`json:&quot;nickname&quot;`</span></span><br><span class="line">	<span class="comment">// &quot;male&quot;, &quot;female&quot;, &quot;unknown&quot;</span></span><br><span class="line">	Sex <span class="type">string</span> <span class="string">`json:&quot;sex&quot;`</span></span><br><span class="line">	<span class="comment">// 年龄</span></span><br><span class="line">	Age <span class="type">int32</span> <span class="string">`json:&quot;age&quot;`</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 群临时会话除了上面的字段, 还有下面的字段</span></span><br><span class="line">	GroupID <span class="type">int64</span> <span class="string">`json:&quot;group_id&quot;`</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 如果是群聊， 除了上面四个基础字段, 还有下面的字段</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 群名片/备注</span></span><br><span class="line">	Card <span class="type">string</span> <span class="string">`json:&quot;card&quot;`</span></span><br><span class="line">	<span class="comment">// 地址</span></span><br><span class="line">	Area <span class="type">string</span> <span class="string">`json:&quot;area&quot;`</span></span><br><span class="line">	<span class="comment">// 成员等级</span></span><br><span class="line">	Level <span class="type">string</span> <span class="string">`json:&quot;level&quot;`</span></span><br><span class="line">	<span class="comment">// 成员角色, owner, admin, member</span></span><br><span class="line">	Role <span class="type">string</span> <span class="string">`json:&quot;role&quot;`</span></span><br><span class="line">	<span class="comment">// 头衔</span></span><br><span class="line">	Title <span class="type">string</span> <span class="string">`json:&quot;title&quot;`</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> EventMessageStrcut <span class="keyword">struct</span> &#123;</span><br><span class="line">	EventHeaderStruct</span><br><span class="line">	MessageType <span class="type">string</span> <span class="string">`json:&quot;message_type&quot;`</span> <span class="comment">// 消息类型, 私聊, 群聊 private, group</span></span><br><span class="line">	SubType     <span class="type">string</span> <span class="string">`json:&quot;sub_type&quot;`</span>     <span class="comment">// 消息的子类型: group, public, friend, normal</span></span><br><span class="line">	MessageID   <span class="type">int32</span>  <span class="string">`json:&quot;message_id&quot;`</span>   <span class="comment">// 消息号</span></span><br><span class="line">	RawMessage  <span class="type">string</span> <span class="string">`json:&quot;raw_message&quot;`</span>  <span class="comment">// 原始消息, 带有CQ码</span></span><br><span class="line">	Sender      sender <span class="string">`json:&quot;sender&quot;`</span></span><br><span class="line">	GroupID     <span class="type">int64</span>  <span class="string">`json:&quot;group_id&quot;`</span> <span class="comment">// 对于群聊消息, 才有群号</span></span><br><span class="line">	<span class="comment">// 为了简便起见, 请禁群匿名, 这里没有写匿名相关的处理</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> SendMsgStruct <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// 消息类型, private, group</span></span><br><span class="line">	MessageType <span class="type">string</span> <span class="string">`json:&quot;message_type&quot;`</span></span><br><span class="line">	<span class="comment">// 仅私聊时需要</span></span><br><span class="line">	UserID <span class="type">int64</span> <span class="string">`json:&quot;user_id&quot;`</span></span><br><span class="line">	<span class="comment">// 仅群聊时需要</span></span><br><span class="line">	GroupID <span class="type">int64</span>  <span class="string">`json:&quot;group_id&quot;`</span></span><br><span class="line">	Message <span class="type">string</span> <span class="string">`json:&quot;message&quot;`</span></span><br><span class="line">	<span class="comment">// 是否作为纯文本</span></span><br><span class="line">	AutoEscape <span class="type">bool</span> <span class="string">`json:&quot;auto_escape&quot;`</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">GetSendToUserBytes</span><span class="params">(msg <span class="type">string</span>, groupID <span class="type">int64</span>, senderUserID <span class="type">int64</span>)</span></span> []<span class="type">byte</span> &#123;</span><br><span class="line">	sendMsgStruct := SendMsgStruct&#123;</span><br><span class="line">		MessageType: <span class="string">&quot;group&quot;</span>,</span><br><span class="line">		GroupID:     groupID,</span><br><span class="line">		Message:     fmt.Sprintf(<span class="string">&quot;[CQ:at,qq=%v]&quot;</span>, senderUserID) + msg,</span><br><span class="line">		AutoEscape:  <span class="literal">false</span>,</span><br><span class="line">	&#125;</span><br><span class="line">	b, _ := json.Marshal(&amp;sendMsgStruct)</span><br><span class="line">	<span class="keyword">return</span> b</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	r := gin.Default()</span><br><span class="line">	r.POST(<span class="string">&quot;/&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">(c *gin.Context)</span></span> &#123;</span><br><span class="line">		<span class="comment">// 看看包是什么类型, 过滤掉心跳包等其他类型的包, 只管消息包</span></span><br><span class="line">		buf, _ := io.ReadAll(c.Request.Body)</span><br><span class="line">		<span class="keyword">var</span> header EventHeaderStruct</span><br><span class="line">		json.Unmarshal(buf, &amp;header)</span><br><span class="line">		<span class="keyword">if</span> header.PostType != <span class="string">&quot;message&quot;</span> &#123;</span><br><span class="line">			c.Status(<span class="number">200</span>)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 专门处理message包, 解析出消息包</span></span><br><span class="line">		<span class="keyword">var</span> message EventMessageStrcut</span><br><span class="line">		json.Unmarshal(buf, &amp;message)</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 此处过滤掉非群组消息, 过滤掉无关群聊</span></span><br><span class="line">		<span class="keyword">if</span> message.MessageType != <span class="string">&quot;group&quot;</span> || (message.GroupID != <span class="number">334903763</span>) &#123;</span><br><span class="line">			c.Status(<span class="number">200</span>)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 过滤掉非at自己的信息</span></span><br><span class="line">		<span class="keyword">if</span> !strings.HasPrefix(message.RawMessage, <span class="string">&quot;[CQ:at,qq=3402002560]&quot;</span>) &#123;</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 用户发给机器人的信息, 抹掉前面的at CQ代码就是消息</span></span><br><span class="line">		userSendToRobotMsg := message.RawMessage[<span class="number">21</span>:]</span><br><span class="line">		<span class="comment">// 发送请求, 请求go-cqhttp, 给用户响应消息, 这里忽略了可能的错误, 对于本地服务没关系, </span></span><br><span class="line">		resp, err := http.Post(<span class="string">&quot;http://127.0.0.1:5700/send_msg&quot;</span>, <span class="string">&quot;application/json&quot;</span>, bytes.NewBuffer(GetSendToUserBytes(userSendToRobotMsg, message.GroupID, message.Sender.UserID)))</span><br><span class="line">        <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">            log.Printf(<span class="string">&quot;failed to Post to cqhttp service: %v\n&quot;</span>, err)</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line">		resp.Body.Close()</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	r.Run()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来运行go-cqhttp和gin服务, 机器人过一会就能工作了, 下面的命令可以快速启动go-cqhttp。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ go-cqhttp -faststart</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot3.png" alt="演示图片"></p>
+<h3 id="接下来"><a href="#接下来" class="headerlink" title="接下来?"></a>接下来?</h3><p>完整实现的代码我已经开源到github上了, 点击<a target="_blank" rel="noopener" href="https://github.com/markity/qq-gpt3.5-bot">此处</a>查看。</p>
+<p>有了上面的工具, 实现一个QQ GPT服务就唾手可得了, 但由于篇幅原因, 这里只讲到了最基础的东西。没有涉及GPT接口的调用, 也没有涉及冷却时间的实现。关于GPT的接口调用, 可以自行查询接口文档, 也可以结合我的代码看看。关于CD冷却时间, 直接做张表查询就行了, 这个很简单。对于查询调用GPT接口, 回复用户信息的任务, 最好开一个单独的协程执行消息任务, 这样不会发生竞态, 也不用锁, 也不会因为GPT请求太快而发生风控。此外, 单独的任务协程可以避免go-cqhttp的timeout导致的消息重放(这样可能导致用户提问一次而收到多次回复信息)。</p>
+<p>最后来展示下最终实现效果:</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot4.jpg" alt="效果图1"></p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot5.jpg" alt="效果图2"></p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/chatgpt/" rel="tag">chatgpt</a>, <a class="tags-none-link" href="/tags/golang/" rel="tag">golang</a>, <a class="tags-none-link" href="/tags/robot/" rel="tag">robot</a>, <a class="tags-none-link" href="/tags/%E5%A4%AA%E5%A5%BD%E7%8E%A9%E4%BA%86/" rel="tag">太好玩了</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

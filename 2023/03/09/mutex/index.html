@@ -1,0 +1,168 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>锁的基本原理(1) | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="什么是原子性?在多线程的场景下, 我们会遇到多个线程访问同一个变量的场景。如果多个线程只读一个全局变量, 那没有任何问题, 任何线程都能读到期望的”定值”。但是如果使用多线程进行并发的读写, 就会发生一致性问题。看下面的程序:">
+  
+  <meta name="description" content="什么是原子性?在多线程的场景下, 我们会遇到多个线程访问同一个变量的场景。如果多个线程只读一个全局变量, 那没有任何问题, 任何线程都能读到期望的”定值”。但是如果使用多线程进行并发的读写, 就会发生一致性问题。看下面的程序:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="锁的基本原理(1)">
+<meta property="og:url" content="http://example.com/2023/03/09/mutex/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="什么是原子性?在多线程的场景下, 我们会遇到多个线程访问同一个变量的场景。如果多个线程只读一个全局变量, 那没有任何问题, 任何线程都能读到期望的”定值”。但是如果使用多线程进行并发的读写, 就会发生一致性问题。看下面的程序:">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-03-08T16:57:55.000Z">
+<meta property="article:modified_time" content="2023-05-19T05:20:30.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="pthread">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/09/mutex/">
+  <time datetime="2023-03-08T16:57:55.000Z">
+    2023-03-09
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">锁的基本原理(1)</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="什么是原子性"><a href="#什么是原子性" class="headerlink" title="什么是原子性?"></a>什么是原子性?</h3><p>在多线程的场景下, 我们会遇到多个线程访问同一个变量的场景。如果多个线程只读一个全局变量, 那没有任何问题, 任何线程都能读到期望的”定值”。但是如果使用多线程进行并发的读写, 就会发生一致性问题。看下面的程序:</p>
+<span id="more"></span>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/futex.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/syscall.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> share_variable = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">new_routine</span><span class="params">(<span class="type">void</span>*)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; <span class="number">20000</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        share_variable ++;</span><br><span class="line">    &#125;    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">pthread_t</span> pid1, pid2;</span><br><span class="line">    pthread_create(&amp;pid1, <span class="literal">NULL</span>, new_routine, <span class="literal">NULL</span>);</span><br><span class="line">    pthread_create(&amp;pid2, <span class="literal">NULL</span>, new_routine, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *ret;</span><br><span class="line">    pthread_join(pid1, &amp;ret);</span><br><span class="line">    pthread_join(pid2, &amp;ret);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, share_variable);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 多次执行, 发现打印的值不相同, 比如我多次执行的结果为:</span></span><br><span class="line"><span class="comment">// 39412</span></span><br><span class="line"><span class="comment">// 25720</span></span><br><span class="line"><span class="comment">// 24974</span></span><br></pre></td></tr></table></figure>
+
+<p>我们预计结果应该是40000, 但结果确都小于40000, 为什么会发生这种情况? 原因很简单, 因为我们认为<code>share_variable ++</code>是原子的, 然而简单如递增操作, 它也不是原子操作。它包含了以下汇编:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">share_variable:</span><br><span class="line">        .zero   <span class="number">4</span></span><br><span class="line">new_routine(<span class="type">void</span>*):</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        movq    %rdi, <span class="number">-24</span>(%rbp)</span><br><span class="line">        movq    $<span class="number">0</span>, <span class="number">-8</span>(%rbp)</span><br><span class="line">        jmp     .L4</span><br><span class="line">.L5:</span><br><span class="line">        movl    <span class="title function_">share_variable</span><span class="params">(%rip)</span>, %eax          <span class="comment">// 看这里 标记1</span></span><br><span class="line">        addl    $1, %eax                            <span class="comment">// 看这里 标记2</span></span><br><span class="line">        movl    %eax, <span class="title function_">share_variable</span><span class="params">(%rip)</span>          <span class="comment">// 看这里 标记3</span></span><br><span class="line">        addq    $1, -8<span class="params">(%rbp)</span></span><br><span class="line">.L4:</span><br><span class="line">        cmpq    $19999, -8<span class="params">(%rbp)</span></span><br><span class="line">        jbe     .L5</span><br><span class="line">        nop</span><br><span class="line">        popq    %rbp</span><br><span class="line">        ret</span><br></pre></td></tr></table></figure>
+
+<p>可以看到, 先取了<code>share_variable</code>的值, 再将此值加一, 然后写回了<code>share_variable</code>。然而当我们写下这些代码的时候, 我们指望此线程是原子地加上1, 而不是先读取它到寄存器, 然后再递增这个寄存器, 最后将临时变量写回原处。显然, 多个线程并发执行此处代码的时候, 必然发生不一致的问题。</p>
+<p>试想内核调度线程是不确定的, 它可以在任何时刻停止调度某个线程, 比如线程A在标记1处的代码执行完后很长时间得不到调度, 然后调度线程B, 让B跑很久, 那么当线程A又被调度执行时, 它将使用之前的<code>share_variable</code>的保存值(因为是很久之前的值, 所以较小)+1, 然后赋值给<code>share_variable</code>, 那么最终值就必然小了</p>
+<p>除了执行语句的原子性问题, 还有另外一个不确定的因素, 那就是cpu的乱序执行, 下面的内容简要提到了这个概念</p>
+<h3 id="原子操作-内存屏障的保证"><a href="#原子操作-内存屏障的保证" class="headerlink" title="原子操作: 内存屏障的保证"></a>原子操作: 内存屏障的保证</h3><p>我们通常有个疑问, 为啥golang或c提供了<code>AtomicLoad</code>和<code>AtomicStore</code>, 难道直接用<code>*addr</code>取值和直接用<code>*addr = val</code>不是原子操作吗? 看下面的汇编:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> i;</span><br><span class="line"><span class="type">int</span> *p = &amp;i;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">func2</span><span class="params">(<span class="type">int</span> n)</span> &#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">func</span><span class="params">()</span> &#123;</span><br><span class="line">    *p = <span class="number">30</span>;</span><br><span class="line">    func2(*p);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 下面是汇编代码</span></span><br><span class="line"></span><br><span class="line">i:</span><br><span class="line">        .zero   <span class="number">4</span></span><br><span class="line">p:</span><br><span class="line">        .quad   i</span><br><span class="line"><span class="title function_">func2</span><span class="params">(<span class="type">int</span>)</span>:</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        movl    %edi, -4<span class="params">(%rbp)</span></span><br><span class="line">        nop</span><br><span class="line">        popq    %rbp</span><br><span class="line">        ret</span><br><span class="line"><span class="title function_">func</span><span class="params">()</span>:</span><br><span class="line">        pushq   %rbp</span><br><span class="line">        movq    %rsp, %rbp</span><br><span class="line">        movq    <span class="title function_">p</span><span class="params">(%rip)</span>, %rax</span><br><span class="line">        movl    $30, <span class="params">(%rax)</span>     <span class="comment">// 标记1</span></span><br><span class="line">        movq    <span class="title function_">p</span><span class="params">(%rip)</span>, %rax</span><br><span class="line">        <span class="title function_">movl</span>    <span class="params">(%rax)</span>, %eax    <span class="comment">// 标记2</span></span><br><span class="line">        movl    %eax, %edi</span><br><span class="line">        call    <span class="title function_">func2</span><span class="params">(<span class="type">int</span>)</span></span><br><span class="line">        nop</span><br><span class="line">        popq    %rbp</span><br><span class="line">        ret</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码展示了直接取值和赋值操作其实是”原子”的操作。可见, 存取某个地址的值, 确实最终用一条汇编完成, 可以说, 这样的指令确实是”原子的”。但是, 即使它们是一条汇编指令, 在多线程条件下却不能用直接用<code>*pointer</code>并发读写同一个地址的对象, 在特别的情况下会发生一致性问题! 下面来阐述原因</p>
+<p>问题就在cpu乱序执行的优化上。在某个cpu操作内存的时候, 由于cpu有多极流水线, 一核连续执行<code>load</code>, <code>store</code>操作时, cpu将分析它们的依赖关系进行乱序执行, 它们的操作顺序可能被打乱。那么此时另外一个核心同时观察这块内存, 就会出现薛定谔的玄学现象, 比如下面的伪代码:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">var x = 0</span><br><span class="line">var y = 0</span><br><span class="line"></span><br><span class="line">Thread A in cpu0:</span><br><span class="line">    x=1</span><br><span class="line">    y=1</span><br><span class="line"></span><br><span class="line">Thread B in cpu1:</span><br><span class="line">    a := x</span><br><span class="line">    b := y</span><br><span class="line">    print(a, b)</span><br><span class="line"></span><br><span class="line">// 可能的打印结果:</span><br><span class="line">    (0,0), (0,1), (1,0), (1,1)</span><br></pre></td></tr></table></figure>
+
+<p>我们把<code>(0,0)</code>,<code>(1,0)</code>, <code>(1,1)</code>定义为正常, 因为它们是确实可能发生的。那<code>(0,1)</code>就是特别诡异的问题了: 明明是先修改<code>x</code>, 再修改<code>y</code>, 为什么会发生<code>y</code>先被观察到修改, <code>x</code>被观察到后修改?</p>
+<p>其实这就是cpu的乱序执行优化, cpu采用流水线技术, 它会根据指令间的依赖顺序打乱连续执行的指令, 以获得更快的处理速度。比如上面的程序, 两次连续<code>load</code>明显没有依赖关系, 那么cpu就可能打乱它们的执行顺序, 从而让另一个线程看到诡异的现象</p>
+<p>显然乱序执行这种优化对于单线程执行的程序没有任何影响, 写单线程程序的程序员无法感知到这种优化, 对单线程, 它是<u>没有任何副作用的</u>。但是对多线程, 对共享变量的读写, 必须保证这种顺序, 那么就得用<u>内存屏障</u>了(除了乱序执行, 由于多核cpu具有缓存, 内存一致性模型也需要考虑, 但是这里不再多做说明, 自行百度)</p>
+<p>内存屏障像一道墙, 保证在越过这道墙时, cpu前面的所有内存操作已经被刷入内存了, 在合适的地方插入内存屏障(它是与架构有关一条指令), 就像下面的伪代码能解决上面的”薛定谔问题”:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">var x = <span class="number">0</span></span><br><span class="line">var y = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">Thread A in cpu0:</span><br><span class="line">    x=<span class="number">1</span></span><br><span class="line">    mb();</span><br><span class="line">    y=<span class="number">1</span></span><br><span class="line"></span><br><span class="line">Thread B in cpu1:</span><br><span class="line">    a := x</span><br><span class="line">    mb();</span><br><span class="line">    b := y</span><br><span class="line">    print(a, b)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 可能的打印结果:</span></span><br><span class="line">    (<span class="number">0</span>,<span class="number">0</span>), (<span class="number">1</span>,<span class="number">0</span>), (<span class="number">1</span>,<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p>内存屏障是的强有力保证, 这个<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/75292441/why-supporting-atomic-load-and-atomic-store-in-go">回答</a>体现了这个问题</p>
+<p>简而言之, 同一个地址在被多个线程并发读写时, 必须做内存屏障</p>
+<p>然而对代码编写者来说, 我们不需要显式使用内存屏障, 原子操作就提供了内存屏障的要求, 就是说必须使用原子操作共享的变量。此外, 锁和golang的管道提供了隐士的内存屏障, 因此我们在正常使用同步原语(锁, 信号量, 条件变量, 管道)的时候, 代码总是能按照我们的预期跑。原子操作是为了防止乱序执行或多核cpu cache不一致时做同步时使用的。当我们要自己实现锁设施的时候, 需要用原子操作。</p>
+<p>我们上面说了这么多, 对程序员来说其实都是废话。这么多内容就是来提示你, 操作多线程读写的变量<u>无论何时</u>都请使用编程语言提供的原子操作!!!即使你不懂什么是内存屏障, 什么是内存一致性模型, 用原子操作能保证你不出错, 来保证程序的正确性</p>
+<p>下面展示了一种使用原子操作的场景:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdatomic.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// volatile保证了此变量不会被整成一个寄存器, 保证它存在于内存</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">atomic_int</span> a = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">thread_b</span><span class="params">(<span class="type">void</span> *)</span> &#123;</span><br><span class="line">    sleep(<span class="number">3</span>);</span><br><span class="line">    <span class="comment">// 原子操作, 有内存屏障保证</span></span><br><span class="line">    <span class="type">atomic_store</span>(&amp;a, <span class="number">1</span>);</span><br><span class="line">    </span><br><span class="line">    a = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">thread_a</span><span class="params">(<span class="type">void</span> *)</span> &#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="comment">// 原子操作, 有内存屏障保证</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="type">atomic_load</span>(&amp;a) != <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;芜湖\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">pthread_t</span> tid1, tid2;</span><br><span class="line"></span><br><span class="line">    pthread_create(&amp;tid1, <span class="literal">NULL</span>, thread_a, <span class="literal">NULL</span>);</span><br><span class="line">    pthread_create(&amp;tid2, <span class="literal">NULL</span>, thread_b, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *ret;</span><br><span class="line">    pthread_join(tid1, &amp;ret);</span><br><span class="line">    pthread_join(tid2, &amp;ret);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="compare-and-swap-cas-实现锁的关键原子操作"><a href="#compare-and-swap-cas-实现锁的关键原子操作" class="headerlink" title="compare and swap(cas): 实现锁的关键原子操作"></a>compare and swap(cas): 实现锁的关键原子操作</h3><p><code>cas</code>操作在x86下对应一条指令(<code>cmpxchg</code>), 在glibc的封装及其伪代码如下:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">atomic_compare_exchange_strong(object, expected, desired)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 伪代码</span></span><br><span class="line"><span class="type">bool</span> <span class="title function_">atomic_compare_exchange_strong</span><span class="params">(<span class="type">int</span> *obj, <span class="type">int</span> *<span class="built_in">exp</span>, <span class="type">int</span> desired)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (*obj == *<span class="built_in">exp</span>) &#123;</span><br><span class="line">        *<span class="built_in">exp</span> = desired;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    retrun <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>它原子的判断某个原子变量的值是否等于<code>expected</code>, 如果相等就替换为<code>desired</code>, 返回1。如果原子变量的值不等于<code>expected</code>那么返回值就是当时这个变量的实际值, 那么返回0</p>
+<p>对于共享的变量, 我们只需要用cas操作, 在想操作这个变量之前, 先将一个原子变量由0原子地设置1即可, 下面使用了cas操作实现了一个”自旋锁”解决了之前的问题:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/futex.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/syscall.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdatomic.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> share_variable = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 0代表没锁, 1代表已锁</span></span><br><span class="line"><span class="type">atomic_int</span> lock = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">new_routine</span><span class="params">(<span class="type">void</span>*)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; <span class="number">20000</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 自旋上锁</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">            <span class="type">int</span> expected = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">if</span>(atomic_compare_exchange_strong(&amp;lock, &amp;expected, <span class="number">1</span>)) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        share_variable ++;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 解锁</span></span><br><span class="line">        <span class="type">atomic_store</span>(&amp;lock, <span class="number">0</span>);</span><br><span class="line">    &#125;    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">pthread_t</span> pid1, pid2;</span><br><span class="line">    pthread_create(&amp;pid1, <span class="literal">NULL</span>, new_routine, <span class="literal">NULL</span>);</span><br><span class="line">    pthread_create(&amp;pid2, <span class="literal">NULL</span>, new_routine, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *ret;</span><br><span class="line">    pthread_join(pid1, &amp;ret);</span><br><span class="line">    pthread_join(pid2, &amp;ret);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, share_variable);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所谓自旋, 就是无限循环重试, 直到拿到锁。所以我们可以看到, 上锁的过程就是原子地尝试将变量从0变为1的过程, 谁能成功那么谁就拥有了锁, 此时就有权读写这个共享变量!</p>
+<h3 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践?"></a>最佳实践?</h3><p>编写多线程程序, 内存一致性必须考虑, 原子操作和同步原语(mutex, sem, cond)都做好了隐式的内存屏障, 应该使用它们来实现一切。</p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tags-none-link" href="/tags/pthread/" rel="tag">pthread</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
