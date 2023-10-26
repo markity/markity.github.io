@@ -1,0 +1,152 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>Paseto密钥 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="传统JWT不同于session, 无状态token不被存储进数据库, 服务端只能验证它是否是由自己签发。一个传统jwt是这样的:">
+  
+  <meta name="description" content="传统JWT不同于session, 无状态token不被存储进数据库, 服务端只能验证它是否是由自己签发。一个传统jwt是这样的:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Paseto密钥">
+<meta property="og:url" content="http://example.com/2023/10/27/pasto/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="传统JWT不同于session, 无状态token不被存储进数据库, 服务端只能验证它是否是由自己签发。一个传统jwt是这样的:">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-10-26T19:30:55.000Z">
+<meta property="article:modified_time" content="2023-10-26T19:59:53.414Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="web">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/10/27/pasto/">
+  <time datetime="2023-10-26T19:30:55.000Z">
+    2023-10-27
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">Paseto密钥</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="传统JWT"><a href="#传统JWT" class="headerlink" title="传统JWT"></a>传统JWT</h3><p>不同于session, 无状态token不被存储进数据库, 服务端只能验证它是否是由自己签发。一个传统jwt是这样的:</p>
+<span id="more"></span>
+
+<p>Header:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;alg&quot;</span><span class="punctuation">:</span> <span class="string">&quot;HS256&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;typ&quot;</span><span class="punctuation">:</span> <span class="string">&quot;JWT&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>Payload:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="string">&quot;??&quot;</span><span class="punctuation">,</span>                   <span class="comment">// 可以是雪花算法生成的唯一id, 也许是为了保证每个瞬间签发的token不一样</span></span><br><span class="line">    <span class="attr">&quot;expirted_at&quot;</span><span class="punctuation">:</span> <span class="number">1698349006</span><span class="punctuation">,</span>   <span class="comment">// 用来控制过期的字段</span></span><br><span class="line">    <span class="comment">// .. 更多字段, 这些字段都应该是公开的, 我们不对它们进行加密, 这些是会暴露给外界的</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>Signature:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">base64UrlEncode(HMACSHA256(</span><br><span class="line">    base64UrlEncode(header)+&quot;.&quot;+base64UrlEncode(payload)+&quot;.&quot;,</span><br><span class="line">    &quot;your-secret-key&quot;</span><br><span class="line">))</span><br></pre></td></tr></table></figure>
+
+<p>组合上面的所有信息, token就是:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">base64UrlEncode(header)+&quot;.&quot;+base64UrlEncode(payload)+&quot;.&quot;+Signatrue</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>为什么需要用base64编码并用.分隔? 这是base64编码后就不会包含.符号, 这样很方便能用字符串操作把三个部分都拿出来。</p>
+</blockquote>
+<h3 id="PASETO"><a href="#PASETO" class="headerlink" title="PASETO"></a>PASETO</h3><p>jwt的一个很low的点就是公开了信息。比如加密算法和一些公开信息, 而公开这些信息是完全不必要的, 也许会因为泄漏这些”公开信息”而造成麻烦。paseto则直接对payload进行了对称加密, 这样拿到token的人将无法获得任何”公开信息”, paseto不公开算法和payload。</p>
+<p>一个paseto是这样的形式:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">v2.local.AAAAA.BBBBB</span><br></pre></td></tr></table></figure>
+
+<p>AAAAA包含了加密版本的payload信息, BBBBB包含了企业信息的base64编码。要实现这样一个token直接用对称加密就完了, 这个token的v2用的协议是<code>AES256 CTR + HMAC SHA384</code>。</p>
+<h3 id="go中生成PASETO"><a href="#go中生成PASETO" class="headerlink" title="go中生成PASETO"></a>go中生成PASETO</h3><p>不必多说, 调轮子就完了</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/o1egl/paseto#key-differences-between-paseto-and-jwt">https://github.com/o1egl/paseto#key-differences-between-paseto-and-jwt</a></p>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/web/" rel="tag">web</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2023 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>
