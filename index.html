@@ -78,6 +78,8 @@
   <div class="entry">
     
       <h3 id="本文目的"><a href="#本文目的" class="headerlink" title="本文目的"></a>本文目的</h3><p>聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。</p>
+<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。</p>
+<p>然而阻塞的io会让线程浪费掉cpu时间, 所以linux推出了非阻塞的io, 通过<code>O_NONBLOCK</code>打开的文件描述符读写都不会阻塞, 配合epoll可以实现单线程处理海量io。</p>
 <h3 id="传统reactor"><a href="#传统reactor" class="headerlink" title="传统reactor"></a>传统reactor</h3><p>目前新语言陆续推出协程, 配套的网络设施也发生了大量变化。例如在”线程资源”稀缺的传统语言中(java和cpp的低版本), epoll(或其它的多路复用系统调用)实现的reactor事件回调模型是主流。我不了解proactor, 所以不讨论它。</p>
     
   </div>
