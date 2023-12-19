@@ -20,7 +20,7 @@
 <meta property="og:description" content="前言在研究6.5840, 看到了zookeeper这个东西，很是好奇，遂跑跑看看是个什么东西。">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-12-20T15:57:55.000Z">
-<meta property="article:modified_time" content="2023-12-19T18:26:57.244Z">
+<meta property="article:modified_time" content="2023-12-19T18:36:38.023Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="分布式系统">
 <meta name="twitter:card" content="summary">
@@ -132,6 +132,9 @@
 <p>例如我们有一个文件, 要求同一时间仅有一个进程读写这个文件, 我们不考虑用linux文件锁这种设施, 怎么办? 下面是个思路:</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">一个进程要读写这个文件, 首先尝试Create Sequential到/filelock, 拿到自己的ticket号</span><br><span class="line">接下来, 需要使用ChildrenW(&quot;/filelock&quot;)来监听filelock下面的子节点变化, 此时判断自己拿到的ticket是否是最小的</span><br><span class="line">如果是</span><br><span class="line">    那么就可以读写了</span><br><span class="line">如果不是</span><br><span class="line">    那么等待channel</span><br><span class="line">channel等待完毕后, 再次ChildrenW, 往复执行知道自己的ticket是children数组中最小的一个</span><br><span class="line"></span><br><span class="line">如果自己拿到了锁, 并且需要释放锁, 只需要删除自己对应的节点即可</span><br></pre></td></tr></table></figure>
 
+<p>如果要实现读写锁?</p>
+<p>那么只要标识一下znode的名字即可, 创建了znode后, 检查自己的前面排队的人是否都是read, 如果都是, 那么可以进行读操作。</p>
+<h3 id="zookeeper实现共享信号量"><a href="#zookeeper实现共享信号量" class="headerlink" title="zookeeper实现共享信号量"></a>zookeeper实现共享信号量</h3><p>实现方法, 就是监听一个znode就完了。put sem操作就是不断地Get And Update。 fetch sem操作也是不断尝试Get And Update, 如果sem不够, 就Watch等待即可。</p>
 <h3 id="zookeeper实现注册中心"><a href="#zookeeper实现注册中心" class="headerlink" title="zookeeper实现注册中心"></a>zookeeper实现注册中心</h3><p>比如我们的user-service想注册, 那么直接Create Sequential And EPHEMERAL就完了。如果是多实例部署, 那么这个需要会自增。</p>
 <h3 id="zookeeper实现配置中心"><a href="#zookeeper实现配置中心" class="headerlink" title="zookeeper实现配置中心"></a>zookeeper实现配置中心</h3><p>很简单, 我们之前的场景已经提供过实现了。</p>
 
