@@ -62,29 +62,30 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/12/20/zookeeper/">
-  <time datetime="2023-12-20T15:57:55.000Z">
-    2023-12-20
+      <a href="/2024/01/09/wal/">
+  <time datetime="2024-01-08T16:03:55.000Z">
+    2024-01-09
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2023/12/20/zookeeper/">zookeeper api探索</a></h1>
+    <h1 class="title"><a href="/2024/01/09/wal/">write after log</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>在研究6.5840, 看到了zookeeper这个东西，很是好奇，遂跑跑看看是个什么东西。</p>
+      <h3 id="问题引入"><a href="#问题引入" class="headerlink" title="问题引入"></a>问题引入</h3><p>给个场景, 一个爬虫程序会从网络中爬取大量的url存储到文件中, 例如当爬虫获取到一条url的时候, 程序会立马append到文件末尾, 文件的内容可能是这样的:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">www.baidu.com</span><br><span class="line">www.google.com</span><br><span class="line">www.leetcode.com</span><br><span class="line"></span><br></pre></td></tr></table></figure>
     
   </div>
   <footer class="end-sep">
     
       
         <div class="alignleft">
-          <a href="/2023/12/20/zookeeper/#more" class="more-link">Read More</a>
+          <a href="/2024/01/09/wal/#more" class="more-link">Read More</a>
         </div>
       
       
@@ -445,7 +446,7 @@
   </div>
   <footer id="footer"><div class="copyright">
   
-  &copy; 2023 <a href="/">Markity</a>
+  &copy; 2024 <a href="/">Markity</a>
   
 </div>
 <div class="theme-copyright">
