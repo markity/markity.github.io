@@ -4,18 +4,27 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
   
-  <title>Markity&#39;s Notes</title>
+  <title>message queue all in one | Markity&#39;s Notes</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   
     <meta name="author" content="Markity">
   
   
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Markity&#39;s Notes">
-<meta property="og:url" content="http://example.com/index.html">
+    <meta name="description" content="kafka install in docker-compose12345678910111213141516171819202122232425version: &amp;#x27;3&amp;#x27; services:  zookeeper:    image: zookeeper:latest    container_name: zookeeper    environment:      - TZ=A">
+  
+  <meta name="description" content="kafka install in docker-compose12345678910111213141516171819202122232425version: &amp;#x27;3&amp;#x27; services:  zookeeper:    image: zookeeper:latest    container_name: zookeeper    environment:      - TZ&#x3D;A">
+<meta property="og:type" content="article">
+<meta property="og:title" content="message queue all in one">
+<meta property="og:url" content="http://example.com/2024/02/03/kafka/index.html">
 <meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="kafka install in docker-compose12345678910111213141516171819202122232425version: &amp;#x27;3&amp;#x27; services:  zookeeper:    image: zookeeper:latest    container_name: zookeeper    environment:      - TZ&#x3D;A">
 <meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-02-02T20:32:55.000Z">
+<meta property="article:modified_time" content="2024-02-04T10:55:23.864Z">
 <meta property="article:author" content="Markity">
+<meta property="article:tag" content="kafka">
+<meta property="article:tag" content="message queue">
+<meta property="article:tag" content="面筋">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
@@ -52,13 +61,7 @@
   </nav>
   <div class="clearfix"></div>
 </header>
-    <div class="content">
-
-
-
-
-  
-    <article class="post">
+    <div class="content"><article class="post">
   <header>
     
       <div class="icon"></div>
@@ -70,7 +73,7 @@
     
     
   
-    <h1 class="title"><a href="/2024/02/03/kafka/">message queue all in one</a></h1>
+    <h1 class="title">message queue all in one</h1>
   
 
   </header>
@@ -210,363 +213,18 @@
 
     
   </div>
-  <footer class="end-sep">
+  <footer>
     
       
       
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2024/01/09/wal/">
-  <time datetime="2024-01-08T16:03:55.000Z">
-    2024-01-09
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2024/01/09/wal/">write after log</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="问题引入"><a href="#问题引入" class="headerlink" title="问题引入"></a>问题引入</h3><p>给个场景, 一个爬虫程序会从网络中爬取大量的url存储到文件中, 例如当爬虫获取到一条url的时候, 程序会立马append到文件末尾, 文件的内容可能是这样的:</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">www.baidu.com</span><br><span class="line">www.google.com</span><br><span class="line">www.leetcode.com</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-    
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/kafka/" rel="tag">kafka</a>, <a class="tags-none-link" href="/tags/message-queue/" rel="tag">message queue</a>, <a class="tags-none-link" href="/tags/%E9%9D%A2%E7%AD%8B/" rel="tag">面筋</a>
   </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2024/01/09/wal/#more" class="more-link">Read More</a>
-        </div>
-      
-      
+
     
     <div class="clearfix"></div>
   </footer>
 </article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/10/27/pasto/">
-  <time datetime="2023-10-26T19:30:55.000Z">
-    2023-10-27
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/10/27/pasto/">Paseto密钥</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="传统JWT"><a href="#传统JWT" class="headerlink" title="传统JWT"></a>传统JWT</h3><p>不同于session, 无状态token不被存储进数据库, 服务端只能验证它是否是由自己签发。一个传统jwt是这样的:</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/10/27/pasto/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/10/09/share1/">
-  <time datetime="2023-10-09T14:17:55.000Z">
-    2023-10-09
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/10/09/share1/">知识分享-线程, 协程以及网络模型</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="本文目的"><a href="#本文目的" class="headerlink" title="本文目的"></a>本文目的</h3><p>聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。</p>
-<h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。</p>
-<p>然而阻塞的io会让线程浪费掉cpu时间, 所以linux推出了非阻塞的io, 通过<code>O_NONBLOCK</code>打开的文件描述符读写都不会阻塞, 配合epoll可以实现单线程处理海量io。</p>
-<h3 id="传统reactor"><a href="#传统reactor" class="headerlink" title="传统reactor"></a>传统reactor</h3><p>目前新语言陆续推出协程, 配套的网络设施也发生了大量变化。例如在”线程资源”稀缺的传统语言中(java和cpp的低版本), epoll(或其它的多路复用系统调用)实现的reactor事件回调模型是主流。我不了解proactor, 所以不讨论它。</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/10/09/share1/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/09/17/2023plan/">
-  <time datetime="2023-09-16T23:59:55.000Z">
-    2023-09-17
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/09/17/2023plan/">2023启动!</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="糟心的话"><a href="#糟心的话" class="headerlink" title="糟心的话"></a>糟心的话</h3><p>昨天微信的大四学长和我们谈了谈如今的就业形势, 简而言之就是非常不妙。强如大佬有三段腾讯实习经历都顶不住去年的就业惨况, 现在是时候卷起来了😭。</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/09/17/2023plan/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/05/29/unix-socket/">
-  <time datetime="2023-05-28T20:57:55.000Z">
-    2023-05-29
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/05/29/unix-socket/">使用unix socket进行本机进程间通讯</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近在研究docker, 实际上docker是一个c&#x2F;s架构的服务。用户通过docker命令与通过网络连接到dockerd服务然后发送请求, 这样就能操作容器。一般来说, 除了root, 还有docker用户组的用户有权操作容器。这种权限管理是怎么做的呢? 本文来探究这个问题。</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/05/29/unix-socket/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/05/29/dezip/">
-  <time datetime="2023-05-28T16:57:55.000Z">
-    2023-05-29
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/05/29/dezip/">压缩解压链接文件和特殊设备文件</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近扒了下docker里rootfs的压缩包, 发现里面除了普通文件, 目录以外还有软链接(Symbolic Link)以及硬链接(Hard Link)。此外, 在go的tar库里面, 我还发现了linux设备的文件类型, 比如fifo(命名管道)和char(字符设备文件)。本文来谈谈如何压缩和解压这些奇怪的文件类型。</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/05/29/dezip/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/05/17/email1/">
-  <time datetime="2023-05-16T16:57:55.000Z">
-    2023-05-17
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/05/17/email1/">关于email的一切(1)-SMTP发信</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="前言"><a href="#前言" class="headerlink" title="前言:"></a>前言:</h3><p>email是工作生活中经使用的通讯工具, 笔者很是好奇它的工作原理, 故有此系列。这个系列聚焦以下几点:</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/05/17/email1/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/05/08/fb/">
-  <time datetime="2023-05-07T16:57:55.000Z">
-    2023-05-08
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/05/08/fb/">浅玩一手: 使用mmap写framebuffer实现写屏, bmp图片格式概述, freetype2渲染文字</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="unix中读写文件的基本函数"><a href="#unix中读写文件的基本函数" class="headerlink" title="unix中读写文件的基本函数"></a>unix中读写文件的基本函数</h3><p>在谈论mmap前, 先来回顾下linux如何使用系统调用读写文件。在c语言中如果要读写文件, 我们第一时间想到的就是open打开某个文件, 然后通过read&#x2F;write对文件描述符读写。看下面的代码演示:</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/05/08/fb/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2023/04/30/vpn/">
-  <time datetime="2023-04-29T16:57:55.000Z">
-    2023-04-30
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/04/30/vpn/">科学上网的多种实现方法(玩法1-tun全局代理)</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>好久没写东西了, 最近研究了各种vpn的实现方法。这次我打算写一个系列, 谈点常用的科学上网技术。这个系列主要讨论两种科学上网的实现方法: 即tun和socks5。</p>
-<p>quic协议的出现让http代理日渐式微, 因此就不研究它了😁。</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/04/30/vpn/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-
-  <nav id="pagination">
-  
-  
-    <a href="/page/2/" class="next">Next</a>
-  
-  <div class="clearfix"></div>
-</nav>
 
 </div>
   </div>
