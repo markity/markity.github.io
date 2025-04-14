@@ -10,24 +10,23 @@
     <meta name="author" content="Markity">
   
   
-    <meta name="description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
+    <meta name="description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好的东西消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
   
-  <meta name="description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
+  <meta name="description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好的东西消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
 <meta property="og:type" content="article">
 <meta property="og:title" content="用Go语言做一个QQ GPT机器人">
-<meta property="og:url" content="http://example.com/2023/03/24/qqbot/index.html">
+<meta property="og:url" content="http://example.com/2023/03/23/qqbot/index.html">
 <meta property="og:site_name" content="Markity&#39;s Notes">
-<meta property="og:description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
+<meta property="og:description" content="胡言乱语最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好的东西消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot.png">
 <meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot2.jpg">
 <meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot3.png">
 <meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot4.jpg">
 <meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot5.jpg">
-<meta property="article:published_time" content="2023-03-23T16:57:55.000Z">
-<meta property="article:modified_time" content="2023-09-15T15:48:12.000Z">
+<meta property="article:published_time" content="2023-03-23T08:57:55.000Z">
+<meta property="article:modified_time" content="2025-04-14T17:51:06.313Z">
 <meta property="article:author" content="Markity">
-<meta property="article:tag" content="太好玩了">
 <meta property="article:tag" content="robot">
 <meta property="article:tag" content="chatgpt">
 <meta property="article:tag" content="golang">
@@ -72,9 +71,9 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/03/24/qqbot/">
-  <time datetime="2023-03-23T16:57:55.000Z">
-    2023-03-24
+      <a href="/2023/03/23/qqbot/">
+  <time datetime="2023-03-23T08:57:55.000Z">
+    2023-03-23
   </time>
 </a>
     
@@ -87,7 +86,7 @@
   
   <div class="entry">
     
-      <h3 id="胡言乱语"><a href="#胡言乱语" class="headerlink" title="胡言乱语"></a>胡言乱语</h3><p>最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好玩的消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):</p>
+      <h3 id="胡言乱语"><a href="#胡言乱语" class="headerlink" title="胡言乱语"></a>胡言乱语</h3><p>最近在学muduo, 但是由于c++水平太弱, 导致我脑子快给想秃了。于是今天早上心血来潮想做点好的东西消遣下, 给qq机器人接入个ChatGPT。我想实现的最终效果是这样的(这是别的群的机器人, 即灵感来源):</p>
 <span id="more"></span>
 
 <p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot.png" alt="效果图1"></p>
@@ -143,7 +142,7 @@
       
       
   <div class="tags">
-    <a class="tags-none-link" href="/tags/chatgpt/" rel="tag">chatgpt</a>, <a class="tags-none-link" href="/tags/golang/" rel="tag">golang</a>, <a class="tags-none-link" href="/tags/robot/" rel="tag">robot</a>, <a class="tags-none-link" href="/tags/%E5%A4%AA%E5%A5%BD%E7%8E%A9%E4%BA%86/" rel="tag">太好玩了</a>
+    <a class="tags-none-link" href="/tags/chatgpt/" rel="tag">chatgpt</a>, <a class="tags-none-link" href="/tags/golang/" rel="tag">golang</a>, <a class="tags-none-link" href="/tags/robot/" rel="tag">robot</a>
   </div>
 
     
