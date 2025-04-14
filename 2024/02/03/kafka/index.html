@@ -10,17 +10,17 @@
     <meta name="author" content="Markity">
   
   
-    <meta name="description" content="kafka install in docker-compose12345678910111213141516171819202122232425version: &amp;#x27;3&amp;#x27; services:  zookeeper:    image: zookeeper:latest    container_name: zookeeper    environment:      - TZ=A">
+    <meta name="description" content="kafka install in docker-compose">
   
-  <meta name="description" content="kafka install in docker-compose12345678910111213141516171819202122232425version: &amp;#x27;3&amp;#x27; services:  zookeeper:    image: zookeeper:latest    container_name: zookeeper    environment:      - TZ&#x3D;A">
+  <meta name="description" content="kafka install in docker-compose">
 <meta property="og:type" content="article">
 <meta property="og:title" content="message queue all in one">
 <meta property="og:url" content="http://example.com/2024/02/03/kafka/index.html">
 <meta property="og:site_name" content="Markity&#39;s Notes">
-<meta property="og:description" content="kafka install in docker-compose12345678910111213141516171819202122232425version: &amp;#x27;3&amp;#x27; services:  zookeeper:    image: zookeeper:latest    container_name: zookeeper    environment:      - TZ&#x3D;A">
+<meta property="og:description" content="kafka install in docker-compose">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2024-02-02T20:32:55.000Z">
-<meta property="article:modified_time" content="2024-02-04T10:55:23.864Z">
+<meta property="article:modified_time" content="2024-02-05T10:31:18.297Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="kafka">
 <meta property="article:tag" content="message queue">
@@ -80,7 +80,9 @@
   
   <div class="entry">
     
-      <h3 id="kafka-install-in-docker-compose"><a href="#kafka-install-in-docker-compose" class="headerlink" title="kafka install in docker-compose"></a>kafka install in docker-compose</h3><figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3&#x27;</span></span><br><span class="line"> </span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">zookeeper:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">zookeeper:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">zookeeper</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">TZ=Asia/Shanghai</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">kafka:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">bitnami/kafka:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">kafka</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;9092:9092&quot;</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ADVERTISED_HOST_NAME=kafka</span></span><br><span class="line">      <span class="comment"># 这里给zookeeper给一个子目录, 便于后续删除</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181/kafka</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_AUTO_CREATE_TOPICS_ENABLE=true</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">TZ=Asia/Shanghai</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">ALLOW_PLAINTEXT_LISTENER=yes</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zookeeper</span></span><br></pre></td></tr></table></figure>
+      <h3 id="kafka-install-in-docker-compose"><a href="#kafka-install-in-docker-compose" class="headerlink" title="kafka install in docker-compose"></a>kafka install in docker-compose</h3><span id="more"></span>
+
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3&#x27;</span></span><br><span class="line"> </span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">zookeeper:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">zookeeper:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">zookeeper</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">TZ=Asia/Shanghai</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">kafka:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">bitnami/kafka:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">kafka</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;9092:9092&quot;</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ADVERTISED_HOST_NAME=kafka</span></span><br><span class="line">      <span class="comment"># 这里给zookeeper给一个子目录, 便于后续删除</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181/kafka</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_AUTO_CREATE_TOPICS_ENABLE=true</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">TZ=Asia/Shanghai</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">ALLOW_PLAINTEXT_LISTENER=yes</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zookeeper</span></span><br></pre></td></tr></table></figure>
 
 <h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><p>两种模式:</p>
 <ol>
@@ -210,6 +212,40 @@
 <p><b>为什么我kafka发送一条数据, ack却等待了将近1s? 怎么验证</b></p>
 <p>kafka自身会在内存batch后再送入磁盘, 默认参数是10000条&#x2F;1s的batch, 而ack是落盘后的响应, 如果数据量很久没有达到batch write的要求, 就会持续等待batch timeout的时间, 也就是1s。</p>
 <p>可以写10000条, 发现几乎零点几秒就完成了。</p>
+<p><b>zk和kafka是如何配合的?</b></p>
+<p>用于维护集群机器的在线状态, 以及leader follower的信息, 以及做选举的轮子。</p>
+<ul>
+<li>&#x2F;kafka&#x2F;brokers&#x2F;ids: 哪些服务器在线</li>
+<li>&#x2F;kafka&#x2F;brokers&#x2F;topics&#x2F;<topic_name>&#x2F;partitions&#x2F;<N>&#x2F;state: 包含leader和isr信息</li>
+<li>&#x2F;kafka&#x2F;consumers: 老版本里面存offset, 现在放kafka topic内部了</li>
+<li>&#x2F;kafka&#x2F;controller: 利用zk特性辅助leader选举</li>
+</ul>
+<h3 id="broker主体工作流程"><a href="#broker主体工作流程" class="headerlink" title="broker主体工作流程"></a>broker主体工作流程</h3><ol>
+<li>启动后: &#x2F;kafka&#x2F;brokers&#x2F;ids注册自身</li>
+<li>抢占controller, 先抢到的作为controller, 此时开启一个新的controller epoch</li>
+<li>成为control leader后监听&#x2F;brokers&#x2F;ids, 得到上下线信息</li>
+<li>为partition选举leader, 将leader和isr信息写入&#x2F;kafka&#x2F;brokers&#x2F;topics&#x2F;<topic_name>&#x2F;partitions&#x2F;<N>&#x2F;state, 结合当前在线情况从avaliable replicas中选出isr</li>
+<li>follower也会监听多个节点, 从leader中拉取消息, 也会监听ids, 以便即使上位, 成为新的control leader</li>
+</ol>
+<p>control leader的作用: 更改元数据, 新增&#x2F;删除topic的时候更改关键信息&#x2F;分配leader和isr, 避免出现多个leader而脑裂。</p>
+<p>八股: 为什么control leader能避免脑裂?</p>
+<p>zookeeper的机制保证只有一个leader能抢到controller, broker会与zookeeper维持一个lease, lease会定时续约。如果某个时刻原来的leader lease断了, 它是没法向zookeeper写入信息的, 它会退回到follower重新与zookeeper建立连接, 这样就避免了两个leader同时都作为leader向zookeeper写入关键信息造成脑裂。</p>
+<h3 id="kafka如何扩容"><a href="#kafka如何扩容" class="headerlink" title="kafka如何扩容?"></a>kafka如何扩容?</h3><p>直接新增一台机器, 连上之前的zookeeper就行了, 这样就在集群中新增了一台kafka机器。之后创建的topic, partition会负载均衡到这台机器上。</p>
+<p>如果想把topic负载均衡到新得topic上需要生成负载均衡计划:</p>
+<p>topics-to-move.json:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">	<span class="attr">&quot;topics&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">		<span class="punctuation">&#123;</span><span class="attr">&quot;topic&quot;</span><span class="punctuation">:</span><span class="string">&quot;first&quot;</span><span class="punctuation">&#125;</span></span><br><span class="line">	<span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;version&quot;</span><span class="punctuation">:</span> <span class="number">1</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>生成负载均衡计划:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; kafka-reassign-partitions.sh --bootstrap-server 127.0.0.1:9092 --topics-to-move-json-file topics-to-move.json --broker-list <span class="string">&quot;0,1,2,3&quot;</span> --generate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 然后下面会输出一个json数据, 也就是执行计划</span></span><br></pre></td></tr></table></figure>
+
+<p>my-plan.json里面放刚生成的执行计划, 然后执行下面的命令:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; kafka-reassgin-partitions.sh --bootstrap-server 127.0.0.1:9092 --reassignment-json-file my-plan.json</span><br></pre></td></tr></table></figure>
+
+<p>验证执行计划是否完成:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt; kafka-reassgin-partitions.sh --bootstrap-server 127.0.0.1:9092 --reassignment-json-file my-plan.json --verify</span><br></pre></td></tr></table></figure>
+
+<p><b>那如何退役旧节点?</b></p>
+<p>很简单, 和上面的类似, 可以生成执行计划, 把topic先负载均衡到其它节点上, 然后停掉它。</p>
 
     
   </div>
@@ -230,7 +266,7 @@
   </div>
   <footer id="footer"><div class="copyright">
   
-  &copy; 2024 <a href="/">Markity</a>
+  &copy; 2025 <a href="/">Markity</a>
   
 </div>
 <div class="theme-copyright">

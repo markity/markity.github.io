@@ -77,178 +77,14 @@
   
   <div class="entry">
     
-      <h3 id="kafka-install-in-docker-compose"><a href="#kafka-install-in-docker-compose" class="headerlink" title="kafka install in docker-compose"></a>kafka install in docker-compose</h3><figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3&#x27;</span></span><br><span class="line"> </span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">zookeeper:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">zookeeper:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">zookeeper</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">TZ=Asia/Shanghai</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">kafka:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">bitnami/kafka:latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">kafka</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;9092:9092&quot;</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ADVERTISED_HOST_NAME=kafka</span></span><br><span class="line">      <span class="comment"># 这里给zookeeper给一个子目录, 便于后续删除</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181/kafka</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_AUTO_CREATE_TOPICS_ENABLE=true</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">TZ=Asia/Shanghai</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">ALLOW_PLAINTEXT_LISTENER=yes</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zookeeper</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><p>两种模式:</p>
-<ol>
-<li>点对点</li>
-<li>发布&#x2F;订阅模式: 其实这种模式已经覆盖点对点功能了, 可以不管1</li>
-</ol>
-<p>一些名词:</p>
-<ul>
-<li>broker: 理解为一个kafka node, 每个节点都有一个broker id。</li>
-<li>topic: 主题, 生产者往topic里面写消息, 消费者从topic中消费。</li>
-<li>partition: 分区, 一个topic中的消息可以分布在多个partition中, 每个partition掌握部分topic消息。partition是一个单独的log文件, 每条记录都以追加的形式写入, 这里可以提到磁盘连续写入很快, 涉及到机械硬盘的物理结构。好处是消费时一个消费组消费一个topic时能够并发消费多个partition, 获得更大的读效率, 代价是失去了有序性。</li>
-<li>consumer group: 多个消费者组成一个消费者组, 提高消费的并行效率。</li>
-<li>batch: producer收用户消息的时候, 会等待消息累积到一定大小后一并发送, 相比来一条发一条, 能够提高吞吐量。kafka producer的batch size默认为16k。八股: 可以拓展etcd的batch。</li>
-<li>linger ms: 如果若干时间内没有触发发送, 也进行发送。八股: 可以拓展高性能异步日志库。</li>
-<li>replication: 副本, 为了保证高可用, 需要备份, replication-factor不能超过broker数。</li>
-</ul>
-<h3 id="脚本基本操作"><a href="#脚本基本操作" class="headerlink" title="脚本基本操作"></a>脚本基本操作</h3><p>topic:</p>
-<ul>
-<li>增: kafka-topics.sh –bootstrap-server kafka:9092 –topic test –create</li>
-<li>删: kafka-topics.sh –bootstrap-server kafka:9092 –topic test –delete</li>
-<li>查: kafka-topics.sh –bootstrap-server kafka:9092 –topic test –describe</li>
-<li>列: kafka-topics.sh –bootstrap-server kafka:9092 –list</li>
-<li>创建并带上分区数和副本数: kafka-topics.sh –bootstrap-server kafka:9092 –create –topic test –partitions 3 –replication-factor 1</li>
-<li>修改分区数: kafka-topics.sh –bootstrap-server kafka:9092 –alter –topic test –partitions 10</li>
-</ul>
-<blockquote>
-<p>–bootstrap-server后面可以跟多个节点, 也可以跟一个节点, 因为一个节点可能挂, 放多个它会尝试多个节点, 命令可靠性更强。<br>–replication-factor带的数必须小于等于broker数, 否则报错。<br>修改分区数, 只能增加不能减少。</p>
-</blockquote>
-<p>producer:</p>
-<ul>
-<li>发消息: kafka-console-producer.sh –bootstrap-server kafka:9092 –topic test, 之后输入一行就是一个消息, 输入CTRL+C退出</li>
-</ul>
-<p>consumer:</p>
-<ul>
-<li>收消息: kafka-console-consumer.sh –bootstrap-server kafka:9092 –topic test, 输入CTRL+C退出</li>
-</ul>
-<blockquote>
-<p>增量消费: 八股, 解释为什么我发送消息后再打开consumer会没有任何消息? 因为consumer包含的操作是创建消费者+消费, 且消费的offset被设置为当前最新的offset+1, 此时是没有任何消息能够被消费。可以启用–from-beginning标志, 让offset设置最小的offset。</p>
-</blockquote>
-<h3 id="基本收发"><a href="#基本收发" class="headerlink" title="基本收发"></a>基本收发</h3><p>pruducer.go:</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/segmentio/kafka-go&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	writer := kafka.NewWriter(kafka.WriterConfig&#123;</span><br><span class="line">		Brokers: []<span class="type">string</span>&#123;<span class="string">&quot;127.0.0.1:9092&quot;</span>&#125;,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		err := writer.WriteMessages(context.Background(), kafka.Message&#123;</span><br><span class="line">			Topic:     <span class="string">&quot;test2&quot;</span>,</span><br><span class="line">			Partition: <span class="number">0</span>,</span><br><span class="line">			Offset:    kafka.LastOffset,</span><br><span class="line">			Key:       []<span class="type">byte</span>(<span class="string">&quot;mykey&quot;</span>),</span><br><span class="line">			Value:     []<span class="type">byte</span>(<span class="string">&quot;myvalue&quot;</span>),</span><br><span class="line">		&#125;)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">		time.Sleep(time.Second)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>consumer.go:</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/segmentio/kafka-go&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	reader := kafka.NewReader(kafka.ReaderConfig&#123;</span><br><span class="line">		Brokers:     []<span class="type">string</span>&#123;<span class="string">&quot;127.0.0.1:9092&quot;</span>&#125;,</span><br><span class="line">		Topic:       <span class="string">&quot;test2&quot;</span>,</span><br><span class="line">		GroupID:     <span class="string">&quot;group1&quot;</span>,</span><br><span class="line">		Partition:   <span class="number">0</span>,</span><br><span class="line">		StartOffset: kafka.FirstOffset,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		msg, err := reader.FetchMessage(context.Background())</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Println(msg)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>reader侧可以选择ReadMessage或FetchOffset, Read不会增加Offset, 可以自行选择增加offset</p>
-</blockquote>
-<h3 id="同步-异步发送"><a href="#同步-异步发送" class="headerlink" title="同步&#x2F;异步发送"></a>同步&#x2F;异步发送</h3><p>同步发送:</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/segmentio/kafka-go&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> INT_MAX = <span class="type">int</span>(^<span class="type">uint</span>(<span class="number">0</span>) &gt;&gt; <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	writer := kafka.NewWriter(kafka.WriterConfig&#123;</span><br><span class="line">		Brokers:      []<span class="type">string</span>&#123;<span class="string">&quot;127.0.0.1:9092&quot;</span>&#125;,</span><br><span class="line">		MaxAttempts:  INT_MAX,</span><br><span class="line">		Async:        <span class="literal">false</span>,</span><br><span class="line">		RequiredAcks: <span class="number">1</span>,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		err := writer.WriteMessages(context.Background(), kafka.Message&#123;</span><br><span class="line">			Topic:     <span class="string">&quot;test2&quot;</span>,</span><br><span class="line">			Partition: <span class="number">0</span>,</span><br><span class="line">			Offset:    kafka.LastOffset,</span><br><span class="line">			Key:       []<span class="type">byte</span>(<span class="string">&quot;mykey&quot;</span>),</span><br><span class="line">			Value:     []<span class="type">byte</span>(<span class="string">&quot;myvalue&quot;</span>),</span><br><span class="line">		&#125;)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">		time.Sleep(time.Second)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>需要留意的就是MaxAttempts,Async,RequiredAcks, 如果发送没有拿到ack, 那它会不断重试直到MaxAttempts次。RequiredAcks可以设置以下值:</p>
-<ul>
-<li>0: 不进行确认, 可能丢数据</li>
-<li>1: 只需等待leader就ack返回</li>
-<li>-1: leader和follower都ack才成功</li>
-</ul>
-<p>异步发送:</p>
-<p>如果Async为true, 代表不care是否发送成功, 我觉得不能用这玩意。</p>
-<h3 id="batch"><a href="#batch" class="headerlink" title="batch"></a>batch</h3><p>kafka.WriterConfig可以设置以下字段实现batch:</p>
-<ul>
-<li>BatchSize: 对应之前提到的batch size</li>
-<li>BatchTimeout: 对应之前提到的linger ms</li>
-</ul>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;context&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/segmentio/kafka-go&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> INT_MAX = <span class="type">int</span>(^<span class="type">uint</span>(<span class="number">0</span>) &gt;&gt; <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	writer := kafka.NewWriter(kafka.WriterConfig&#123;</span><br><span class="line">		Brokers:      []<span class="type">string</span>&#123;<span class="string">&quot;127.0.0.1:9092&quot;</span>&#125;,</span><br><span class="line">		MaxAttempts:  INT_MAX,</span><br><span class="line">		Async:        <span class="literal">false</span>,</span><br><span class="line">		RequiredAcks: <span class="number">1</span>,</span><br><span class="line">		BatchTimeout: time.Second * <span class="number">10</span>,</span><br><span class="line">		BatchSize:    <span class="number">100000</span>,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		fmt.Println(<span class="string">&quot;等待&quot;</span>, time.Now())</span><br><span class="line">		err := writer.WriteMessages(context.Background(), kafka.Message&#123;</span><br><span class="line">			Topic:     <span class="string">&quot;test2&quot;</span>,</span><br><span class="line">			Partition: <span class="number">0</span>,</span><br><span class="line">			Offset:    kafka.LastOffset,</span><br><span class="line">			Key:       []<span class="type">byte</span>(<span class="string">&quot;mykey&quot;</span>),</span><br><span class="line">			Value:     []<span class="type">byte</span>(<span class="string">&quot;myvalue&quot;</span>),</span><br><span class="line">		&#125;)</span><br><span class="line">		fmt.Println(<span class="string">&quot;返回&quot;</span>, time.Now())</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="built_in">panic</span>(err)</span><br><span class="line">		&#125;</span><br><span class="line">		time.Sleep(time.Second)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这个程序基本得等待10s才能返回。</p>
-<blockquote>
-<p>当使用batch的时候正确的做法是多个goroutine共享writer, 否则基本就会阻塞在这里很长时间, 我认为不用batch, 自己做batch会更好, 比如下面的例子, 把一堆Message放数组里, 然后WriteMessage写入。</p>
-</blockquote>
-<h3 id="balancer"><a href="#balancer" class="headerlink" title="balancer"></a>balancer</h3><p>可以加入一个partition选择器:</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Balancer <span class="keyword">struct</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(b *Balancer)</span></span> Balance(msg kafka.Message, partitions ...<span class="type">int</span>) (partition <span class="type">int</span>) &#123;</span><br><span class="line">	<span class="keyword">return</span> msg.Partition</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> INT_MAX = <span class="type">int</span>(^<span class="type">uint</span>(<span class="number">0</span>) &gt;&gt; <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	writer := kafka.NewWriter(kafka.WriterConfig&#123;</span><br><span class="line">		Brokers:      []<span class="type">string</span>&#123;<span class="string">&quot;127.0.0.1:9092&quot;</span>&#125;,</span><br><span class="line">		MaxAttempts:  INT_MAX,</span><br><span class="line">		Async:        <span class="literal">false</span>,</span><br><span class="line">		RequiredAcks: <span class="number">1</span>,</span><br><span class="line">		Balancer:     &amp;Balancer&#123;&#125;,</span><br><span class="line">		BatchTimeout: <span class="number">0</span>,</span><br><span class="line">		BatchSize:    <span class="number">0</span>,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	msgs := []kafka.Message&#123;&#125;</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">1000000</span>; i++ &#123;</span><br><span class="line">		msgs = <span class="built_in">append</span>(msgs, kafka.Message&#123;</span><br><span class="line">			Topic:     <span class="string">&quot;test2&quot;</span>,</span><br><span class="line">			Partition: <span class="number">0</span>,</span><br><span class="line">			Offset:    kafka.LastOffset,</span><br><span class="line">			Key:       []<span class="type">byte</span>(<span class="string">&quot;mykey&quot;</span>),</span><br><span class="line">			Value:     []<span class="type">byte</span>(<span class="string">&quot;myvalue&quot;</span>),</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">	fmt.Println(<span class="string">&quot;等待&quot;</span>, time.Now())</span><br><span class="line">	writer.WriteMessages(context.Background(), msgs...)</span><br><span class="line">	fmt.Println(<span class="string">&quot;返回&quot;</span>, time.Now())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>常见的策略:</p>
-<ul>
-<li>RoundRobin: 逐个换</li>
-<li>Hash: 根据key hash, key相同的会发到同一个分区</li>
-</ul>
-<p>八股: 为什么用partition?</p>
-<ul>
-<li>可以实现负载均衡的作用, 多台broker作为一个大topic不同partition的leader, 可以分担磁盘负担</li>
-<li>提高生产&#x2F;消费的并行度, 对于不需要顺序的业务, 尽可能用多的partition和机子可以更快的消费</li>
-</ul>
-<h3 id="八股杂烩"><a href="#八股杂烩" class="headerlink" title="八股杂烩"></a>八股杂烩</h3><p><b>如何提高生产者的发送效率?</b></p>
-<ul>
-<li>batch: 尽量把多个消息绑定起来再发送, 减小网络io消耗时间。</li>
-<li>压缩: 这样每次网络来回能传输更多消息, 常见的有gzip, snappy</li>
-<li>多partition: 可以向多个partition写, 提高并行度</li>
-</ul>
-<p><b>如何保证可靠性?</b></p>
-<ol>
-<li>RequiredAcks:</li>
-</ol>
-<ul>
-<li>1: 如果leader挂了, 还是可能丢数据, 因为还没开始同步副本</li>
-<li>-1: 很可靠, 要求follower也全部返回ack, 但是通常会消耗更多时间, 因为通常是follower来主动拉, 可能耗时很多</li>
-</ul>
-<ol start="2">
-<li>ISR-in-sync replica set:</li>
-</ol>
-<p>对于某个partition, 如果follower长时间未向leader发送任何同步请求, 就将它踢出isr, 这样就不会发生leader死等follower的情况。后续重启了可以追加回isr, 因此isr是动态的, 不是一成不变的。</p>
-<ol start="3">
-<li>min.insync.replica</li>
-</ol>
-<p>怎么定义全部落盘ack? 指定这个参数可以确定, 仅有当replica的数目达到这个最小值时才叫”全部落盘”。</p>
-<p>真正可靠:</p>
-<p>RequiredAcks &#x3D; -1 + 包含leader有大于等于3份副本 + ISR &gt;&#x3D; 2。</p>
-<p>分析:</p>
-<p>刚好有两备一主的情况, 如果一个备份宕了, 也能够正常提供服务, 所以两备一主很好。</p>
-<p>如何选择:</p>
-<ul>
-<li>ack&#x3D;0: 用于日志传输, 量大能够容忍丢失, 比如用户行为日志做数仓</li>
-<li>ack&#x3D;-1: 即为可靠的场景需要这个, 比如和钱有关</li>
-</ul>
-<p><b>如何解决数据重复消费的问题</b></p>
-<p>数据传递语义:</p>
-<ul>
-<li>at least once: 失败的时候进行重试直到成功</li>
-<li>at most once: 不管成功失败, 发就完了</li>
-<li>exatly once: 需要consumer和producer配合, producer保证at least once的发送, comsumer那边可以用acid的数据库存储当前消耗序列号。</li>
-</ul>
-<p>重启时直接读数据库, 拿到消费的序列号, 回到宕机前的状态。每次收到一条消息, 都需要从数据库里面找到自己是否处理过这个消息, 如果处理过就不处理了, 处理后更新数据库, 防止下次重复消费。</p>
-<p><b>kafka事务是怎么样的</b></p>
-<p>首先通过procedure id找到事务协调者, 事务协调者会不留余力地进行重试, 达到最终一致性, 我没用过, 看起来就不好用?</p>
-<p><b>如何保证数据有序性?</b></p>
-<p>单分区内是有序的, 乱序&#x2F;多partition虽然能提高性能但是不能保证有序性, 此时可以把需要保证有序的某些消息放一个partition中能够保证有序。</p>
-<p><b>为什么我kafka发送一条数据, ack却等待了将近1s? 怎么验证</b></p>
-<p>kafka自身会在内存batch后再送入磁盘, 默认参数是10000条&#x2F;1s的batch, 而ack是落盘后的响应, 如果数据量很久没有达到batch write的要求, 就会持续等待batch timeout的时间, 也就是1s。</p>
-<p>可以写10000条, 发现几乎零点几秒就完成了。</p>
-
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
-      <a href="/2024/01/09/wal/">
-  <time datetime="2024-01-08T16:03:55.000Z">
-    2024-01-09
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2024/01/09/wal/">write after log</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="问题引入"><a href="#问题引入" class="headerlink" title="问题引入"></a>问题引入</h3><p>给个场景, 一个爬虫程序会从网络中爬取大量的url存储到文件中, 例如当爬虫获取到一条url的时候, 程序会立马append到文件末尾, 文件的内容可能是这样的:</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">www.baidu.com</span><br><span class="line">www.google.com</span><br><span class="line">www.leetcode.com</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+      <h3 id="kafka-install-in-docker-compose"><a href="#kafka-install-in-docker-compose" class="headerlink" title="kafka install in docker-compose"></a>kafka install in docker-compose</h3>
     
   </div>
   <footer class="end-sep">
     
       
         <div class="alignleft">
-          <a href="/2024/01/09/wal/#more" class="more-link">Read More</a>
+          <a href="/2024/02/03/kafka/#more" class="more-link">Read More</a>
         </div>
       
       
@@ -559,6 +395,43 @@
 
 
   
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/04/05/std-function/">
+  <time datetime="2023-04-04T16:57:55.000Z">
+    2023-04-05
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/04/05/std-function/">c++ function, any的实现</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="any的简要用法"><a href="#any的简要用法" class="headerlink" title="any的简要用法:"></a>any的简要用法:</h3><p><code>muduo::TcpConnection</code>类中有一个<code>boost::any</code>成员, 每个连接都可以有属于自己的”上下文”。muduo的”文件传输”的例子中用到了这个特性, 看下面代码利用到了这个特性:</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/04/05/std-function/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
 
   <nav id="pagination">
   
@@ -572,7 +445,7 @@
   </div>
   <footer id="footer"><div class="copyright">
   
-  &copy; 2024 <a href="/">Markity</a>
+  &copy; 2025 <a href="/">Markity</a>
   
 </div>
 <div class="theme-copyright">
