@@ -62,43 +62,6 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/02/17/d-stack/">
-  <time datetime="2023-02-17T08:57:55.000Z">
-    2023-02-17
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/02/17/d-stack/">[线程杂谈]pthread实现线程动态栈</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h2 id="前言-栈的基本逻辑"><a href="#前言-栈的基本逻辑" class="headerlink" title="前言: 栈的基本逻辑"></a>前言: 栈的基本逻辑</h2><p>进行函数调用时, 会将当前指令处的地址压入(<code>push</code>)到栈顶, 从函数返回时, 从栈顶弹出(<code>pop</code>)返回地址, 并跳转过去, 这便是栈的一个使用方法。其次, 在c语言中, 声明一个局部变量, 也会将其压入栈顶(但不是一定的, 我们也可以声明一个寄存器变量, 此时它就代表一个寄存器而不占用栈空间)。然而过深的函数调用会使
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/02/17/d-stack/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
       <a href="/2023/02/16/hello-world/">
   <time datetime="2023-02-16T08:57:55.000Z">
     2023-02-16
