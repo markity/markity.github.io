@@ -1,0 +1,170 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>[线程杂谈]pthread实现线程动态栈 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="前言: 栈的基本逻辑进行函数调用时, 会将当前指令处的地址压入(push)到栈顶, 从函数返回时, 从栈顶弹出(pop)返回地址, 并跳转过去, 这便是栈的一个使用方法。其次, 在c语言中, 声明一个局部变量, 也会将其压入栈顶(但不是一定的, 我们也可以声明一个寄存器变量, 此时它就代表一个寄存器而不占用栈空间)。然而过深的函数调用会使">
+  
+  <meta name="description" content="前言: 栈的基本逻辑进行函数调用时, 会将当前指令处的地址压入(push)到栈顶, 从函数返回时, 从栈顶弹出(pop)返回地址, 并跳转过去, 这便是栈的一个使用方法。其次, 在c语言中, 声明一个局部变量, 也会将其压入栈顶(但不是一定的, 我们也可以声明一个寄存器变量, 此时它就代表一个寄存器而不占用栈空间)。然而过深的函数调用会使">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[线程杂谈]pthread实现线程动态栈">
+<meta property="og:url" content="http://example.com/2023/02/17/d-stack/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="前言: 栈的基本逻辑进行函数调用时, 会将当前指令处的地址压入(push)到栈顶, 从函数返回时, 从栈顶弹出(pop)返回地址, 并跳转过去, 这便是栈的一个使用方法。其次, 在c语言中, 声明一个局部变量, 也会将其压入栈顶(但不是一定的, 我们也可以声明一个寄存器变量, 此时它就代表一个寄存器而不占用栈空间)。然而过深的函数调用会使">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/dstack1.png">
+<meta property="article:published_time" content="2023-02-17T08:57:55.000Z">
+<meta property="article:modified_time" content="2023-09-15T15:58:30.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="没用的冷知识">
+<meta property="article:tag" content="pthread">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="太好玩了">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/dstack1.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/02/17/d-stack/">
+  <time datetime="2023-02-17T08:57:55.000Z">
+    2023-02-17
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">[线程杂谈]pthread实现线程动态栈</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h2 id="前言-栈的基本逻辑"><a href="#前言-栈的基本逻辑" class="headerlink" title="前言: 栈的基本逻辑"></a>前言: 栈的基本逻辑</h2><p>进行函数调用时, 会将当前指令处的地址压入(<code>push</code>)到栈顶, 从函数返回时, 从栈顶弹出(<code>pop</code>)返回地址, 并跳转过去, 这便是栈的一个使用方法。其次, 在c语言中, 声明一个局部变量, 也会将其压入栈顶(但不是一定的, 我们也可以声明一个寄存器变量, 此时它就代表一个寄存器而不占用栈空间)。然而过深的函数调用会使<span id="more"></span>得栈压入过多的内容, 声明一个较大的局部变量(例如<code>char a[999999]</code>)也会占用大量的栈空间。因此有必要在程序中保持栈的平衡, 比如尽量规避使用递归调用, 因为它是不可控的, 会大量<code>push</code>而不及时<code>pop</code>, 使栈占用过多, 造成<code>栈溢出</code>的后果。一个设计良好的算法, 应该避免递归调用, 避免在一个函数中声明一个大的变量。</p>
+<h2 id="linux的”main线程“的栈安排"><a href="#linux的”main线程“的栈安排" class="headerlink" title="linux的”main线程“的栈安排"></a>linux的”main线程“的栈安排</h2><p>在linux中, pthread和最初的main函数代表的线程(这里我们用<code>main线程</code>来归纳)使用不同的栈。其中<code>main线程</code>的栈由系统内核维护, 可以通过<code>getrlimit</code>得到<code>main线程</code>限制, 下面的代码演示了这一点。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/resource.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rlimit</span> <span class="title">stack_info</span>;</span></span><br><span class="line">    getrlimit(RLIMIT_STACK, &amp;stack_info);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%lu %lu\n&quot;</span>, stack_info.rlim_cur, stack_info.rlim_max);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* output: 我的机子是x86_64架构, 打印的输出大约是8M, 2^64-1</span></span><br><span class="line"><span class="comment">8388608 18446744073709551615</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+
+<p>来观察输出, 当前使用的限制是8M, 因此我们目前的main线程最多使用8M的栈空间。如果我们要支持更大的栈空间, 可以使用setrlimit来设置当前限制, 你可以将其改为一个极大的数字(甚至大于你的电脑ram, 但要求小于rlit_max, 这个rlit_max是你最大能设置的数值)。每当栈空间不够时, 内核负责给你申请新的页表, 使你能使用更大的栈(俗称懒加载)。当你的栈空间使用已经达到了rlim_cur, 此时内核就不再为你申请新的页表, 而是直接把这个进程杀死了, 下面的程序演示了栈溢出时进程被杀死的情形。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    main();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* output:</span></span><br><span class="line"><span class="comment">&#x27;./main&#x27; terminated by signal SIGSEGV (Address boundary error)</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+
+<p>值得注意的是, setrlimit只能root用户才能使用, 如果你以普通用户的权限运行setrlimit函数, 那么这个函数将不会起作用且返回<code>Permission Denied</code>错误。</p>
+<h2 id="pthread线程的栈安排"><a href="#pthread线程的栈安排" class="headerlink" title="pthread线程的栈安排"></a>pthread线程的栈安排</h2><p>当我们运行pthread_create时, 我们可以指定attr, 我们一般写多线程程序时直接将其指定为<code>NULL</code>, 表示使用默认的配置, 下面说明了一个普通的pthread线程的运行方式。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span>* <span class="title function_">new_routine</span><span class="params">(<span class="type">void</span> *arg)</span> &#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, *(<span class="type">int</span>*)arg);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> *arg = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">int</span>));</span><br><span class="line">    *arg = <span class="number">200</span>;</span><br><span class="line">    <span class="type">pthread_t</span> tid;</span><br><span class="line">    pthread_create(&amp;tid, <span class="literal">NULL</span>, new_routine, arg);</span><br><span class="line">    sleep(<span class="number">10</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 结果: 打印10秒的200</span></span><br></pre></td></tr></table></figure>
+
+<p>那么, 以默认配置创建的pthread, 栈在哪里呢? 阅读gnu pthread源码, 可以发现, pthread创建的线程使用<code>mmap</code>匿名映射为其分配栈空间, 且分配的栈空间较小。阅读linux的内存安排相关文章可以知道内核为<code>mmap</code>在内存模型中占有某部分区域, 我们知道堆从低地址处向上增长, 栈在高地址处向下增长, 而<code>mmap映射区</code>就在它们之间, 下面的图片可以看的很清楚。</p>
+<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/dstack1.png" alt="linux进程的内存安排"></p>
+<p><code>mmap</code>可以将文件映射到文件映射区, 这里不展开这种用法。此外它还能进行<code>匿名映射</code>, 这种映射专用于申请内存, 大小必须为系统页大小的整数倍, 并只有写入某个页的时候, 系统内核才会分配这个页来实现<code>懒加载</code>, 下面是一个实验, 说明<code>mmap</code>的懒加载机制。打开资源监视器, 运行程序, 查看内存占用情况。注释掉程序中标记的一行, 再运行程序查看内存占用情况。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 262144个4K, 等于1G, 4k为页大小</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SIZE ((unsigned long)262144)</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// mmap(addr, size, prot, flags, fd, offset)</span></span><br><span class="line">    <span class="comment">// 使用mmap, 一般将addr写为NULL, 这代表由内核决定使用哪块内存</span></span><br><span class="line">    <span class="comment">// size代表申请内存的大小, 为4k(也就是页大小)的倍数</span></span><br><span class="line">    <span class="comment">// prot代表这块映射区域的权限保护, WRITE代表可写, READ代表可读</span></span><br><span class="line">    <span class="comment">// MAP_ANONYMOUS|MAP_PRIVATE 代表使用匿名映射, 不过多展开, 自行百度了解mmap的具体用法</span></span><br><span class="line">    <span class="comment">// fd, offset代表要映射的文件以及下标, 匿名映射不需要它们, 这里设置成-1和0即可</span></span><br><span class="line">    <span class="type">char</span> *addr = mmap(<span class="literal">NULL</span>, SIZE*<span class="number">4096</span>, PROT_WRITE|PROT_READ, MAP_ANONYMOUS|MAP_PRIVATE, <span class="number">-1</span>, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (addr == MAP_FAILED) &#123;</span><br><span class="line">        perror(<span class="string">&quot;mmap error&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    sleep(<span class="number">5</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; SIZE; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (i == SIZE/<span class="number">2</span>) &#123;</span><br><span class="line">            sleep(<span class="number">3</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        addr[i] = <span class="number">1</span>; <span class="comment">// 注释我</span></span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, addr[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    sleep(<span class="number">10</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 不注释addr[i] = 1行实验结果: 5秒后内存多占用0.5G, 再过3秒又占用0.5G, 最终总共占用1G内存</span></span><br><span class="line"><span class="comment">// 注释掉: 没有更多的内存占用</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>值得留意的是, <code>mmap</code>的第三个参数<code>prot</code>(代表<code>protect</code>), 是该段内存的访问权限, 除了可以通过<code>mmap</code>设置, 在<code>mmap</code>后, 还能通过<code>mprotect</code>修改。当然你可以选择修改映射的全部部分, 也可以只修改映射的一部分, 在本文的末尾, 我们将利用<code>mprotect</code>实现动态栈。</p>
+<p>既然<code>pthread</code>能用自己申请的<code>mmap</code>匿名映射作为栈, 那么我们能否自己指定栈大小呢? 答案是肯定的, 下面的程序展示了这种自己设置栈的思路。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">do_func</span><span class="params">(<span class="type">int</span> i)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, i);</span><br><span class="line">    do_func(i+<span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">new_func</span><span class="params">(<span class="type">void</span> *)</span> &#123;</span><br><span class="line">    do_func(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// 尝试给更大的空间, 观察输出的最大数值</span></span><br><span class="line">    <span class="type">void</span> *new_stack = <span class="built_in">malloc</span>(PTHREAD_STACK_MIN*<span class="number">2</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%p\n&quot;</span>, new_stack);</span><br><span class="line"></span><br><span class="line">    <span class="type">pthread_attr_t</span> attr;</span><br><span class="line">    pthread_attr_init(&amp;attr);</span><br><span class="line">    pthread_attr_setstack(&amp;attr, new_stack, PTHREAD_STACK_MIN*<span class="number">2</span>);</span><br><span class="line">    <span class="type">pthread_t</span> tid;</span><br><span class="line">    pthread_create(&amp;tid, &amp;attr, new_func, <span class="literal">NULL</span>);</span><br><span class="line">    pthread_join(tid, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以使用<code>mmap</code>或<code>malloc</code>等函数获得的空间作为栈, 只要是一块可用的内存空间, 都能成为<code>pthread</code>的栈。</p>
+<h2 id="实现动态栈的思路"><a href="#实现动态栈的思路" class="headerlink" title="实现动态栈的思路"></a>实现动态栈的思路</h2><p>现在有了前面的知识储备, 我们能够开始实现动态栈了, 下面将展示如何利用页错误(<code>SEGMENT FAULT</code>)信号处理函数来实现栈的动态增长, 步骤如下。</p>
+<ol>
+<li>使用<code>mmap</code>一次性映射超大内存(可以大于自身机器的ram大小, 我们这里规定栈最大为4000K, 你可以自行调大), 由此来为<code>pthread</code>预留足够的栈空间</li>
+<li>使用<code>mprotect</code>修改之前映射的内存, 开放最顶端的一部分区域为可读写, 并将紧邻的一个页空间作为警戒区(权限设置为NONE)</li>
+<li>创建使用该<code>mmap</code>的线程, <code>attr</code>中指定这个映射地址</li>
+<li>线程运行程序中, 设置信号处理函数, 发生<code>SIGSEGV</code>时, 此信号处理函数被调用, 在此处重新调用<code>mprotect</code>扩大<code>mmap</code>可读写区域的大小, 并重新设置警戒区</li>
+</ol>
+<p>下面是这种方法的代码, 运行并修改<code>info.max_alloc_page_num = 1000;</code>, 将1000改的更大, 观察资源消耗情况:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">stack_info</span> &#123;</span></span><br><span class="line">    <span class="comment">// mmap获得的地址</span></span><br><span class="line">    <span class="type">void</span> *mmap_addr;</span><br><span class="line">    <span class="comment">// 已分配的页的数目</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> alloc_page_num;</span><br><span class="line">    <span class="comment">// 最多分配的页数</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> max_alloc_page_num;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">stack_info</span> <span class="title">info</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">do_func</span><span class="params">(<span class="type">int</span> i)</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d\n&quot;</span>, i);</span><br><span class="line">    do_func(++i);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">handler</span><span class="params">(<span class="type">int</span> signo, <span class="type">siginfo_t</span> *siginfo, <span class="type">void</span> *)</span> &#123;</span><br><span class="line">    info.alloc_page_num *= <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">if</span>(info.alloc_page_num &gt; info.max_alloc_page_num) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;segment overflow\n&quot;</span>);</span><br><span class="line">        <span class="comment">// 这里修改3秒, 可以观察资源管理器的内存状况</span></span><br><span class="line">        sleep(<span class="number">3</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 将顶端的若干页设置为读写权限</span></span><br><span class="line">    mprotect((<span class="type">void</span>*)(info.mmap_addr+(info.max_alloc_page_num+<span class="number">1</span>-info.alloc_page_num)*<span class="number">4096</span>), info.alloc_page_num*<span class="number">4096</span>, PROT_READ|PROT_WRITE);</span><br><span class="line">    <span class="comment">// 设置警戒区域, 当尝试访问此区域时, 产生SIGSEGV</span></span><br><span class="line">    mprotect((<span class="type">void</span>*)(info.mmap_addr+(info.max_alloc_page_num-info.alloc_page_num)*<span class="number">4096</span>), <span class="number">4096</span>, PROT_NONE);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> *<span class="title function_">new_routine</span><span class="params">(<span class="type">void</span> *data)</span> &#123;</span><br><span class="line">    <span class="comment">// 必须为信号处理函数设置单独的栈空间</span></span><br><span class="line">    <span class="type">stack_t</span> s = &#123;</span><br><span class="line">        .ss_flags = <span class="number">0</span>,</span><br><span class="line">        .ss_size = <span class="number">4096</span>,</span><br><span class="line">        .ss_sp = <span class="built_in">malloc</span>(<span class="number">4096</span>)</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="type">int</span> n = sigaltstack(&amp;s, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">action</span>;</span></span><br><span class="line">    action.sa_flags = SA_SIGINFO|SA_RESTART|SA_ONSTACK;</span><br><span class="line">    sigfillset(&amp;action.sa_mask);</span><br><span class="line">    action.sa_sigaction = handler;</span><br><span class="line">    sigaction(SIGSEGV, &amp;action, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    do_func(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// 最初有10页, 也就是40k</span></span><br><span class="line">    info.alloc_page_num = <span class="number">10</span>;</span><br><span class="line">    info.max_alloc_page_num = <span class="number">1000</span>;</span><br><span class="line">    <span class="comment">// 多申请一个页, 用来作为guard</span></span><br><span class="line">    info.mmap_addr = mmap(<span class="literal">NULL</span>, (info.max_alloc_page_num+<span class="number">1</span>)*<span class="number">4096</span>, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE,<span class="number">-1</span>, <span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 设置栈</span></span><br><span class="line">    mprotect((<span class="type">void</span>*)(info.mmap_addr+(info.max_alloc_page_num+<span class="number">1</span>-info.alloc_page_num)*<span class="number">4096</span>), info.alloc_page_num*<span class="number">4096</span>, PROT_READ|PROT_WRITE);</span><br><span class="line">    <span class="comment">// 设置警戒区域</span></span><br><span class="line">    mprotect((<span class="type">void</span>*)(info.mmap_addr+(info.max_alloc_page_num+<span class="number">1</span>-info.alloc_page_num<span class="number">-1</span>)*<span class="number">4096</span>), <span class="number">4096</span>, PROT_NONE);</span><br><span class="line"></span><br><span class="line">    <span class="type">pthread_attr_t</span> attr;</span><br><span class="line">    pthread_attr_init(&amp;attr);</span><br><span class="line">    pthread_attr_setstack(&amp;attr, info.mmap_addr, (info.max_alloc_page_num+<span class="number">1</span>)*<span class="number">4096</span>);</span><br><span class="line">    <span class="type">pthread_t</span> tid;</span><br><span class="line">    <span class="type">int</span> n = pthread_create(&amp;tid, &amp;attr, new_routine, <span class="literal">NULL</span>);</span><br><span class="line">    pthread_join(tid, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="写在最后-一些QA"><a href="#写在最后-一些QA" class="headerlink" title="写在最后, 一些QA"></a>写在最后, 一些QA</h2><p>Q: 为什么要给信号处理函数单独的栈?<br>A: 如果不单独设置, 内核将使用程序当前的栈作为信号处理函数的栈, 然而这里已经没有空间, 内核发现后会直接杀死进程</p>
+<p>Q: 为什么可以给<code>mmap</code>指定超大的空间, 甚至大于机器?<br>A: <code>mmap</code>匿名映射是懒加载的, 只有当程序尝试写入某个4k区间, 内核才会从内存中申请物理空间</p>
+<p>Q: 把栈搞这么大, 有什么意义?<br>A: 没有意义, 我认为可以优化算法, 避免递归的算法, 而不是想着用更大的栈空间, 良好的程序设计, 栈总是平衡的</p>
+<p>Q: 为什么要一次性先申请足够大的<code>mmap</code>匿名映射?<br>A: 栈的空间必须保证连续, 在一次<code>mmap</code>后, 操作系统不能保下一个<code>mmap</code>分配的内存块紧挨者第一块</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/75136657/how-to-implement-a-dynamic-grow-stack-with-pthread">stack overflow的回答</a></li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tags-none-link" href="/tags/pthread/" rel="tag">pthread</a>, <a class="tags-none-link" href="/tags/%E5%A4%AA%E5%A5%BD%E7%8E%A9%E4%BA%86/" rel="tag">太好玩了</a>, <a class="tags-none-link" href="/tags/%E6%B2%A1%E7%94%A8%E7%9A%84%E5%86%B7%E7%9F%A5%E8%AF%86/" rel="tag">没用的冷知识</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2025 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  
+  <title>tty之ssh的基本实现原理 | Markity&#39;s Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  
+    <meta name="author" content="Markity">
+  
+  
+    <meta name="description" content="前言linux服务器用户直接使用终端与服务器交互, 用户可以执行各种命令, 如果电脑上装的是linux无桌面版本, 那么点击开机键, 不久就能见到屏幕上提示登陆的信息, 用户登陆后能进行各种操作, 这个黑色的命令行界面就是终端。
+此外, 桌面版本的linux用户虽然没有直接使用终端, 却能够用类似konsole的终端模拟器与终端交互。此外我们在本地的linux终端上输入ssh 对端服务器的ip,">
+  
+  <meta name="description" content="前言linux服务器用户直接使用终端与服务器交互, 用户可以执行各种命令, 如果电脑上装的是linux无桌面版本, 那么点击开机键, 不久就能见到屏幕上提示登陆的信息, 用户登陆后能进行各种操作, 这个黑色的命令行界面就是终端。 此外, 桌面版本的linux用户虽然没有直接使用终端, 却能够用类似konsole的终端模拟器与终端交互。此外我们在本地的linux终端上输入ssh 对端服务器的ip,">
+<meta property="og:type" content="article">
+<meta property="og:title" content="tty之ssh的基本实现原理">
+<meta property="og:url" content="http://example.com/2023/03/14/tty-ssh/index.html">
+<meta property="og:site_name" content="Markity&#39;s Notes">
+<meta property="og:description" content="前言linux服务器用户直接使用终端与服务器交互, 用户可以执行各种命令, 如果电脑上装的是linux无桌面版本, 那么点击开机键, 不久就能见到屏幕上提示登陆的信息, 用户登陆后能进行各种操作, 这个黑色的命令行界面就是终端。 此外, 桌面版本的linux用户虽然没有直接使用终端, 却能够用类似konsole的终端模拟器与终端交互。此外我们在本地的linux终端上输入ssh 对端服务器的ip,">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-03-14T08:57:55.000Z">
+<meta property="article:modified_time" content="2023-05-19T05:24:34.000Z">
+<meta property="article:author" content="Markity">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="我要造轮子">
+<meta property="article:tag" content="terminal">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Markity&#39;s Notes" type="application/atom+xml">
+  
+  
+    <link rel="icon" type="image/x-icon" href="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/avatar.jpg">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body>
+  <div class="wrapper">
+    <header id="header">
+  <div class="title">
+    <h1><a href="/">Markity&#39;s Notes</a></h1>
+    <p><a href="/"></a></p>
+  </div>
+  <nav class="nav">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/archives">Archives</a></li>
+      
+      
+        <li><a href="/atom.xml">RSS</a></li>
+      
+    </ul>
+    <div class="clearfix"></div>
+  </nav>
+  <div class="clearfix"></div>
+</header>
+    <div class="content"><article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/14/tty-ssh/">
+  <time datetime="2023-03-14T08:57:55.000Z">
+    2023-03-14
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title">tty之ssh的基本实现原理</h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>linux服务器用户直接使用终端与服务器交互, 用户可以执行各种命令, 如果电脑上装的是linux无桌面版本, 那么点击开机键, 不久就能见到屏幕上提示登陆的信息, 用户登陆后能进行各种操作, 这个黑色的命令行界面就是终端。</p>
+<p>此外, 桌面版本的linux用户虽然没有直接使用终端, 却能够用类似konsole的<u>终端模拟器</u>与终端交互。此外我们在本地的linux终端上输入<code>ssh 对端服务器的ip</code>, 能够连接到远端服务器, 也能与终端进行交互。这两种场景都离不开<u>伪终端</u>的作用</p>
+<p>阅读本文可以知道伪终端的基本概念, 知道如何实现一个终端模拟器, 知道如何实现一个ssh或者screen那样的软件, 下面是前置知识, 务必阅读。</p>
+<span id="more"></span>
+
+<ul>
+<li><a target="_blank" rel="noopener" href="https://waynerv.com/posts/how-tty-system-works/">一篇极好的文章, 详细介绍了伪终端(pty)相关概念</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.rkoucha.fr/tech_corner/sigwinch.html">这篇文章介绍了SIGWINCH信号, 这个和终端模拟器大小改变, vim也能做出变化的原理有关</a></li>
+</ul>
+<p>要阅读这篇文章, 还需要对linux的session, signal, shell有一定的了解。</p>
+<h3 id="终端模拟器的简要图景"><a href="#终端模拟器的简要图景" class="headerlink" title="终端模拟器的简要图景"></a>终端模拟器的简要图景</h3><p>终端模拟器是模拟终端(命令行模式下真正的终端, 这种终端是一种硬件支持, 如果我们没有安装桌面, 我们访问的用户接口就叫终端)的一种软件, 它可以用多种多样的桌面应用框架实现界面, 比如qt, electron等。实现终端模拟器需要使用内核提供的pty设备, 这种设备可以用来实现终端模拟器或ssh, screen之类的软件。</p>
+<p>pty就是伪终端的意思, 我们按下<code>CTRL-ALT-F2</code>切换的终端是真正的终端。而比如我们在桌面上打开的konsole是一个经典的终端模拟器。</p>
+<p>要创建一个终端模拟器, 需要两个进程, 父进程负责渲染界面, 子进程负责执行程序(使用exec命令)。下面的demo可以看出父子进程的职能:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;pty.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> master;</span><br><span class="line">    <span class="type">int</span> slave;</span><br><span class="line">    <span class="type">char</span> name[<span class="number">256</span>];</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">winsize</span> <span class="title">ws</span> =</span> &#123;</span><br><span class="line">        .ws_col = <span class="number">30</span>,</span><br><span class="line">        .ws_row = <span class="number">30</span></span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    openpty(&amp;master, &amp;slave, name, <span class="literal">NULL</span>, &amp;ws);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%d %d %s\n&quot;</span>, master, slave, name);</span><br><span class="line">    <span class="keyword">if</span> (fork() == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 子进程</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 先关闭之前所有从父进程拿到的fd, 这里粗略估计一下</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            close(i);</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line"></span><br><span class="line">        <span class="comment">// 开启一个新的session, 此进程成为session leader, session可以有一个控制终端</span></span><br><span class="line">        <span class="comment">// setsid将丢弃之前的session, &quot;自立门派&quot;</span></span><br><span class="line">        setsid();</span><br><span class="line">        <span class="comment">// 关闭从父进程拷贝过来的012描述符, 开这个终端自己的描述符</span></span><br><span class="line">        close(<span class="number">0</span>);</span><br><span class="line">        close(<span class="number">1</span>);</span><br><span class="line">        close(<span class="number">2</span>);</span><br><span class="line">        <span class="comment">// 如果这个进程是session leader且没有控制终端, 打开pty设备, 会使此进程成为伪终端的控制终端</span></span><br><span class="line">        open(name, O_RDWR, <span class="number">0</span>);      <span class="comment">// stdin</span></span><br><span class="line">        dup(<span class="number">0</span>);                     <span class="comment">// stdout</span></span><br><span class="line">        dup(<span class="number">0</span>);                     <span class="comment">// stderr</span></span><br><span class="line">        <span class="comment">// 运行shell</span></span><br><span class="line">        execl(<span class="string">&quot;/bin/bash&quot;</span>, <span class="literal">NULL</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 父进程</span></span><br><span class="line">        <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">            sleep(<span class="number">3</span>);</span><br><span class="line">            <span class="type">char</span> buf[<span class="number">100</span>];</span><br><span class="line">            write(master, <span class="string">&quot;abc\n&quot;</span>, <span class="number">4</span>);</span><br><span class="line">            <span class="type">int</span> n = read(master, buf, <span class="number">100</span>);</span><br><span class="line">            buf[n] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, buf);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 输出</span></span><br><span class="line"><span class="comment">3 4 /dev/pts/18</span></span><br><span class="line"><span class="comment">[markity@mycom tty]$ abc</span></span><br><span class="line"><span class="comment">bash: abc: command not found</span></span><br><span class="line"><span class="comment">[markity@mycom tty]$ abc</span></span><br><span class="line"><span class="comment">bash: abc: command not found</span></span><br><span class="line"><span class="comment">... 更多循环消息</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+
+<p>我们可以认为, 一个终端模拟器的父进程需要从主设备文件中读, 用读出来的内容渲染界面(比如用一些如qt的桌面应用框架画图), 捕获用户按键, 将内容写入主设备文件(简而言之, 终端模拟器就是对master进行io操作, 包括<code>read</code>, <code>write</code>, <code>ioctl</code>, 并画界面)。</p>
+<p>子进程需要借助打开的从设备文件(成为伪终端的控制终端), 用<code>dup</code>系统调用分别获得stdin(fd&#x3D;0), stdout(fd&#x3D;1)和stderr(fd&#x3D;2), 并且执行<code>exec</code>系统调用进入shell。</p>
+<p>可以总结: 终端其实就是个cs架构的”服务器”, 终端模拟器只是读写master设备, 然后绘画界面, 将键盘事件写入到master设备做通信罢了。</p>
+<p>我们也可以看到, 子进程通过拷贝(<code>dup</code>)从设备文件得到了<code>stdin</code>, <code>stdout</code>, <code>stderr</code>。难道它们其实是一个东西? 我们平时写c语言代码, 可是认为它们有着完全不同的意义。下面来验证一下, 看看是否能向<code>stdin</code>写入内容:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    write(STDIN_FILENO, <span class="string">&quot;hello\n&quot;</span>, <span class="number">6</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 输出hello\n</span></span><br></pre></td></tr></table></figure>
+
+<p>最终结果很让人惊讶, 确实能写!那么可以说<code>stdin</code>, <code>stdout</code>, <code>stderr</code>其实代指同一个设备文件对象。但为了符合标准, 将其分为了三个不同的fd, 暗含不同的逻辑含义。我们平时可能不会注意到这点, <code>0</code>, <code>1</code>, <code>2</code>代表同一个设备确实让我耳目一新。</p>
+<h3 id="终端的种类"><a href="#终端的种类" class="headerlink" title="终端的种类"></a>终端的种类</h3><p>现在打开你的终端模拟器, 比如konsole, 输入<code>echo $TERM</code>, 可以得到以下输出:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@mycom markity]<span class="comment"># echo $TERM</span></span><br><span class="line">xterm-256color</span><br></pre></td></tr></table></figure>
+
+<p>现在按<code>CTRL-ALT-F2</code>, 在命令行模式下做同样的操作:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@mycom markity]<span class="comment"># echo $TERM</span></span><br><span class="line">linux</span><br></pre></td></tr></table></figure>
+
+<p>我们来解释这些输出:</p>
+<ol>
+<li>终端有不同的种类, 例如<code>xterm-256color</code>, <code>vt100</code>, <code>linux</code></li>
+<li>不同种类的终端拥有不同的<u>能力</u></li>
+<li>某种终端所拥有的能力通过<code>/usr/share/terminfo</code>的数据库查询</li>
+</ol>
+<p>自终端诞生以来, 兼容性就需要被考虑, 因此有数据库存储了各种各样终端的”能力”。我们桌面上终端模拟器的终端类型是<code>xterm-256color</code>, 它有很多<code>linux</code>终端没有的能力。比如我们可以支持鼠标, 这就是终端模拟器的拓展。</p>
+<h3 id="当终端模拟器大小改变"><a href="#当终端模拟器大小改变" class="headerlink" title="当终端模拟器大小改变?"></a>当终端模拟器大小改变?</h3><p>当我们使用终端模拟器时, 我们可以改变终端模拟器的窗口大小, 然而vim似乎能正常获悉窗口大小改变, 做出响应式布局, 这是什么原理? </p>
+<p>先来阐述步骤, 终端模拟器改变大小时, 父进程将做出以下操作:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ioctl(master, TIOCSWINSZ, &amp;win_size_struct);</span><br></pre></td></tr></table></figure>
+
+<p>内核收到后, 将给伪终端的前台进程发送SIGWINCH, 此时vim就能获悉终端大小改变, 然后做出响应了。</p>
+<h3 id="实现ssh的简要图景"><a href="#实现ssh的简要图景" class="headerlink" title="实现ssh的简要图景:"></a>实现ssh的简要图景:</h3><p>我们知道, ssh分为客户端和服务端。服务器运行sshd这个守护进程, 我们在本地的终端运行ssh这个命令就能连接到远端, 随后输入用户名和密码就能像操纵本地终端一样操作远端linux服务器了。</p>
+<p>现在不考虑加密, 只考虑简单实现, 我们来捋顺一下步骤</p>
+<p>其中客户端要有下面的步骤:</p>
+<p>0.将自身终端直接设置成raw mode(此时line discipline不发送任何信号, 也不会有行缓冲, 用户输入的字符立即被程序接收, 相当于用户的每个按键产生的字节都被内核原封不动地写入0号描述符, 我们可以从0读出字节序列)。并且设立SIGWINCH的信号handler, 在接收到信号的时候, 调用<code>ioctl</code>, 命令用<code>TIOCGWINSZ</code>就能获得新的宽高。<br>1.与服务端建立tcp连接, 发送自身终端的宽高<br>2.然后不断从socket读, 写入文件描述符0(其实0,1,2是一个东西, 写入0,1,2没区别的), 不断从文件描述符0读, 写入socket(这里要多路复用)。当SIGWINCH响应时, 也应该读出新的宽高, 发送给服务端。这里发送给服务器的数据包类型分两种, 一种是WINCH事件, 一种是用户正常读写, 要把包分成两种类型通知服务器</p>
+<p>其中服务端要有以下步骤:</p>
+<p>1.监听tcp连接, 接收客户端发来的宽高, 并初始化pty设备<br>2.开启子进程, 把<code>stdin</code>, <code>stdout</code>, <code>stderr</code>安排好。调用exec执行<code>/bin/bash</code><br>3.父进程负责从socket读, 写入0文件描述符, 且不断从0文件描述符读, 写入socket(此处多路复用)。父进程需要分析包的类型, 如果是WINCH事件, 那么<code>ioctl(master, TIOCSWINSZ, &amp;win_size_struct);</code>。如果是正常写入, 那么<code>write</code>给master文件描述符</p>
+<h3 id="简要代码实现"><a href="#简要代码实现" class="headerlink" title="简要代码实现"></a>简要代码实现</h3><p>点击<a target="_blank" rel="noopener" href="https://github.com/markity/go-ssh-remote-demo">此处</a>, 这是一个go版本的简易实现, 能够响应窗口大小改变。</p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
+<li><a target="_blank" rel="noopener" href="https://waynerv.com/posts/how-tty-system-works/">一篇极好的文章, 详细介绍了伪终端(pty)相关概念</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.rkoucha.fr/tech_corner/sigwinch.html">这篇文章介绍了SIGWINCH信号, 这个和终端模拟器大小改变, vim也能做出变化的原理有关</a></li>
+<li><a target="_blank" rel="noopener" href="https://pandaychen.github.io/2019/10/20/HOW-TO-BUILD-A-SSHD-WITH-GOLANG/">使用Golang实现SSH和SSHD</a></li>
+</ul>
+
+    
+  </div>
+  <footer>
+    
+      
+      
+  <div class="tags">
+    <a class="tags-none-link" href="/tags/linux/" rel="tag">linux</a>, <a class="tags-none-link" href="/tags/terminal/" rel="tag">terminal</a>, <a class="tags-none-link" href="/tags/%E6%88%91%E8%A6%81%E9%80%A0%E8%BD%AE%E5%AD%90/" rel="tag">我要造轮子</a>
+  </div>
+
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+</div>
+  </div>
+  <footer id="footer"><div class="copyright">
+  
+  &copy; 2025 <a href="/">Markity</a>
+  
+</div>
+<div class="theme-copyright">
+  Theme by <a href="https://github.com/orderedlist" target="_blank">orderedlist</a>
+   | 
+  Redesign by <a href="http://heroicyang.com/" target="_blank">Heroic Yang</a>
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script src="/js/scale.fix.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+  (function($){
+    $('.fancybox').fancybox();
+  })(jQuery);
+</script>
+
+</body>
+</html>

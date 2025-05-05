@@ -70,22 +70,23 @@
     
     
   
-    <h1 class="title"><a href="/2025/04/24/long-link/">长连技术架构</a></h1>
+    <h1 class="title"><a href="/2025/04/24/long-link/">IM技术架构(1) 外围基建-长连网关</a></h1>
   
 
   </header>
   
   <div class="entry">
     
-      <h1 id="长连协议头调研"><a href="#长连协议头调研" class="headerlink" title="长连协议头调研"></a>长连协议头调研</h1><ol>
-<li>wx mars长连协议</li>
-</ol>
-<p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/qqbot.png" alt="效果图1"></p>
-
+      <h1 id="im大图"><a href="#im大图" class="headerlink" title="im大图"></a>im大图</h1><p><img src="https://blog-image-1257452121.cos.ap-chongqing.myqcloud.com/im-arch.jpg" alt="im系统上下游"></p>
+<p>本文聚焦最上面的长连网关。</p>
     
   </div>
   <footer class="end-sep">
     
+      
+        <div class="alignleft">
+          <a href="/2025/04/24/long-link/#more" class="more-link">Read More</a>
+        </div>
       
       
     
@@ -196,8 +197,6 @@
     
       <h3 id="本文目的"><a href="#本文目的" class="headerlink" title="本文目的"></a>本文目的</h3><p>聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。</p>
 <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。</p>
-<p>然而阻塞的io会让线程浪费掉cpu时间, 所以linux推出了非阻塞的io, 通过<code>O_NONBLOCK</code>打开的文件描述符读写都不会阻塞, 配合epoll可以实现单线程处理海量io。</p>
-<h3 id="传统reactor"><a href="#传统reactor" class="headerlink" title="传统reactor"></a>传统reactor</h3><p>目前新语言陆续推出协程, 配套的网络设施也发生了大量变化。例如在”线程资源”稀缺的传统语言中(java和cpp的低版本), epoll(或其它的多路复用系统调用)实现的reactor事件回调模型是主流。我不了解proactor, 所以不讨论它。</p>
     
   </div>
   <footer class="end-sep">
@@ -219,15 +218,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/09/17/2023plan/">
-  <time datetime="2023-09-16T23:59:55.000Z">
-    2023-09-17
+      <a href="/2023/09/16/2023plan/">
+  <time datetime="2023-09-16T15:59:55.000Z">
+    2023-09-16
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2023/09/17/2023plan/">2023启动!</a></h1>
+    <h1 class="title"><a href="/2023/09/16/2023plan/">2023启动!</a></h1>
   
 
   </header>
@@ -241,7 +240,7 @@
     
       
         <div class="alignleft">
-          <a href="/2023/09/17/2023plan/#more" class="more-link">Read More</a>
+          <a href="/2023/09/16/2023plan/#more" class="more-link">Read More</a>
         </div>
       
       
@@ -256,15 +255,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/05/29/unix-socket/">
-  <time datetime="2023-05-28T20:57:55.000Z">
-    2023-05-29
+      <a href="/2023/05/28/unix-socket/">
+  <time datetime="2023-05-28T12:57:55.000Z">
+    2023-05-28
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2023/05/29/unix-socket/">使用unix socket进行本机进程间通讯</a></h1>
+    <h1 class="title"><a href="/2023/05/28/unix-socket/">使用unix socket进行本机进程间通讯</a></h1>
   
 
   </header>
@@ -278,7 +277,7 @@
     
       
         <div class="alignleft">
-          <a href="/2023/05/29/unix-socket/#more" class="more-link">Read More</a>
+          <a href="/2023/05/28/unix-socket/#more" class="more-link">Read More</a>
         </div>
       
       
@@ -293,15 +292,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/05/29/dezip/">
-  <time datetime="2023-05-28T16:57:55.000Z">
-    2023-05-29
+      <a href="/2023/05/28/dezip/">
+  <time datetime="2023-05-28T08:57:55.000Z">
+    2023-05-28
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2023/05/29/dezip/">压缩解压链接文件和特殊设备文件</a></h1>
+    <h1 class="title"><a href="/2023/05/28/dezip/">压缩解压链接文件和特殊设备文件</a></h1>
   
 
   </header>
@@ -315,7 +314,7 @@
     
       
         <div class="alignleft">
-          <a href="/2023/05/29/dezip/#more" class="more-link">Read More</a>
+          <a href="/2023/05/28/dezip/#more" class="more-link">Read More</a>
         </div>
       
       
@@ -330,15 +329,15 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/05/17/email1/">
-  <time datetime="2023-05-16T16:57:55.000Z">
-    2023-05-17
+      <a href="/2023/05/16/email1/">
+  <time datetime="2023-05-16T08:57:55.000Z">
+    2023-05-16
   </time>
 </a>
     
     
   
-    <h1 class="title"><a href="/2023/05/17/email1/">关于email的一切(1)-SMTP发信</a></h1>
+    <h1 class="title"><a href="/2023/05/16/email1/">关于email的一切(1)-SMTP发信</a></h1>
   
 
   </header>
@@ -352,7 +351,7 @@
     
       
         <div class="alignleft">
-          <a href="/2023/05/17/email1/#more" class="more-link">Read More</a>
+          <a href="/2023/05/16/email1/#more" class="more-link">Read More</a>
         </div>
       
       

@@ -11,18 +11,17 @@
   
   
     <meta name="description" content="本文目的聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。
-背景多核时代, 使用多线程能加速运算。然而网络&amp;#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。
-然而阻塞的io会让线程">
+背景多核时代, 使用多线程能加速运算。然而网络&amp;#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。">
   
-  <meta name="description" content="本文目的聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。 背景多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。 然而阻塞的io会让线程">
+  <meta name="description" content="本文目的聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。 背景多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="知识分享-线程, 协程以及网络模型">
 <meta property="og:url" content="http://example.com/2023/10/09/share1/index.html">
 <meta property="og:site_name" content="Markity&#39;s Notes">
-<meta property="og:description" content="本文目的聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。 背景多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。 然而阻塞的io会让线程">
+<meta property="og:description" content="本文目的聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。 背景多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-10-09T14:17:55.000Z">
-<meta property="article:modified_time" content="2023-10-21T09:48:08.723Z">
+<meta property="article:modified_time" content="2025-04-27T17:33:03.033Z">
 <meta property="article:author" content="Markity">
 <meta property="article:tag" content="知识分享">
 <meta property="article:tag" content="网络模型">
@@ -83,10 +82,10 @@
     
       <h3 id="本文目的"><a href="#本文目的" class="headerlink" title="本文目的"></a>本文目的</h3><p>聚焦线程, 协程, 有栈协程, 无栈协程, reactor, 网络框架, netpoll, 阻塞等名词, 了解比较主流的网络编程逻辑。</p>
 <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>多核时代, 使用多线程能加速运算。然而网络&#x2F;磁盘io的阻塞会白白浪费时间, 浪费线程资源。但是线程资源是宝贵的, 开多了浪费性能(切换会耗费很多时间), 开少了无法利用多核的优势, 因此有多少核开多少个线程是主流认知。</p>
-<p>然而阻塞的io会让线程浪费掉cpu时间, 所以linux推出了非阻塞的io, 通过<code>O_NONBLOCK</code>打开的文件描述符读写都不会阻塞, 配合epoll可以实现单线程处理海量io。</p>
-<h3 id="传统reactor"><a href="#传统reactor" class="headerlink" title="传统reactor"></a>传统reactor</h3><p>目前新语言陆续推出协程, 配套的网络设施也发生了大量变化。例如在”线程资源”稀缺的传统语言中(java和cpp的低版本), epoll(或其它的多路复用系统调用)实现的reactor事件回调模型是主流。我不了解proactor, 所以不讨论它。</p>
 <span id="more"></span>
 
+<p>然而阻塞的io会让线程浪费掉cpu时间, 所以linux推出了非阻塞的io, 通过<code>O_NONBLOCK</code>打开的文件描述符读写都不会阻塞, 配合epoll可以实现单线程处理海量io。</p>
+<h3 id="传统reactor"><a href="#传统reactor" class="headerlink" title="传统reactor"></a>传统reactor</h3><p>目前新语言陆续推出协程, 配套的网络设施也发生了大量变化。例如在”线程资源”稀缺的传统语言中(java和cpp的低版本), epoll(或其它的多路复用系统调用)实现的reactor事件回调模型是主流。我不了解proactor, 所以不讨论它。</p>
 <p>在没有协程的传统语言中, 为了尽量减少系统调度的频率, 用少量线程+epoll处理海量连接是高并发服务器的基本思路。陈硕提到, 一个好的reactor框架会减少程序员遇到的”偶发复杂性”(意思就是说不用自己手写epoll), 让程序员更加专注于业务。</p>
 <p>陈硕说的好, 那我就不用epoll开搞了, 而是直接聚焦传统语言最常用的reactor模型写个简单的demo。c++比较好的reactor框架可能是muduo, libhv(字节的大佬做的, 我没用过), java的则是netty(据说很多开源轮子都用它做网络)。笔者对muduo比较熟悉, 这里抄一段代码来做演示:</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;muduo/base/Logging.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;muduo/net/EventLoop.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;muduo/net/TcpServer.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;muduo/net/TcpConnection.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    muduo::net::EventLoop loop;</span><br><span class="line">    muduo::<span class="function">net::InetAddress <span class="title">listenAddr</span><span class="params">(<span class="string">&quot;127.0.0.1&quot;</span>, <span class="number">8080</span>)</span></span>;</span><br><span class="line">    muduo::<span class="function">net::TcpServer <span class="title">server</span><span class="params">(&amp;loop, listenAddr, <span class="string">&quot;My Echo Server&quot;</span>, muduo::net::TcpServer::Option::kReusePort)</span></span>;</span><br><span class="line">    server.<span class="built_in">setConnectionCallback</span>([](<span class="type">const</span> muduo::net::TcpConnectionPtr &amp;conn)&#123;</span><br><span class="line">        LOG_INFO &lt;&lt; <span class="string">&quot;一个新连接的到来&quot;</span>;</span><br><span class="line">        conn-&gt;<span class="built_in">send</span>(<span class="string">&quot;你好新连接\n&quot;</span>);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    server.<span class="built_in">setMessageCallback</span>([](<span class="type">const</span> muduo::net::TcpConnectionPtr &amp;conn, muduo::net::Buffer *buf, muduo::Timestamp)&#123;</span><br><span class="line">        std::string <span class="built_in">msg</span>(buf-&gt;<span class="built_in">retrieveAllAsString</span>());</span><br><span class="line">        LOG_INFO &lt;&lt; <span class="string">&quot;收到一条消息&quot;</span> &lt;&lt; msg.<span class="built_in">size</span>();</span><br><span class="line">        conn-&gt;<span class="built_in">send</span>(msg);</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    server.<span class="built_in">start</span>();</span><br><span class="line">    loop.<span class="built_in">loop</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
