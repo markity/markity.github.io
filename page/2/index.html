@@ -62,43 +62,6 @@
   <header>
     
       <div class="icon"></div>
-      <a href="/2023/04/04/std-function/">
-  <time datetime="2023-04-04T08:57:55.000Z">
-    2023-04-04
-  </time>
-</a>
-    
-    
-  
-    <h1 class="title"><a href="/2023/04/04/std-function/">c++ function, any的实现</a></h1>
-  
-
-  </header>
-  
-  <div class="entry">
-    
-      <h3 id="any的简要用法"><a href="#any的简要用法" class="headerlink" title="any的简要用法:"></a>any的简要用法:</h3><p><code>muduo::TcpConnection</code>类中有一个<code>boost::any</code>成员, 每个连接都可以有属于自己的”上下文”。muduo的”文件传输”的例子中用到了这个特性, 看下面代码利用到了这个特性:</p>
-    
-  </div>
-  <footer class="end-sep">
-    
-      
-        <div class="alignleft">
-          <a href="/2023/04/04/std-function/#more" class="more-link">Read More</a>
-        </div>
-      
-      
-    
-    <div class="clearfix"></div>
-  </footer>
-</article>
-
-
-  
-    <article class="post">
-  <header>
-    
-      <div class="icon"></div>
       <a href="/2023/04/01/ping/">
   <time datetime="2023-04-01T08:57:55.000Z">
     2023-04-01
@@ -420,6 +383,43 @@
       
         <div class="alignleft">
           <a href="/2023/03/12/tcell/#more" class="more-link">Read More</a>
+        </div>
+      
+      
+    
+    <div class="clearfix"></div>
+  </footer>
+</article>
+
+
+  
+    <article class="post">
+  <header>
+    
+      <div class="icon"></div>
+      <a href="/2023/03/09/mutex3/">
+  <time datetime="2023-03-09T09:57:55.000Z">
+    2023-03-09
+  </time>
+</a>
+    
+    
+  
+    <h1 class="title"><a href="/2023/03/09/mutex3/">锁的基本原理(3)</a></h1>
+  
+
+  </header>
+  
+  <div class="entry">
+    
+      <h3 id="如何降低无意义的自旋损耗"><a href="#如何降低无意义的自旋损耗" class="headerlink" title="如何降低无意义的自旋损耗?"></a>如何降低无意义的自旋损耗?</h3><p>前两节, 我们实现了自旋锁, 然而自旋锁很拉跨, 它会占用线程的执行时间去做没有意义的自旋操作。也就是说, 自旋属于没有意义的性能损耗, 如果可以, 我们更希望内核此时停止调度这个线程, 转而去执行其它线程, 等待锁空闲的时候, 再回来调度此线程, 借此提高cpu利用率</p>
+    
+  </div>
+  <footer class="end-sep">
+    
+      
+        <div class="alignleft">
+          <a href="/2023/03/09/mutex3/#more" class="more-link">Read More</a>
         </div>
       
       
