@@ -2,16 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://markity.github.io/hello-world/</loc>
-    
-    <lastmod>2026-04-08</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://markity.github.io/aaa/</loc>
+    <loc>https://markity.github.io/about/</loc>
     
     <lastmod>2026-04-08</lastmod>
     
@@ -29,12 +20,5 @@
 
   
 
-  
-  <url>
-    <loc>https://markity.github.io/categories/CPP/</loc>
-    <lastmod>2026-04-08</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
   
 </urlset>

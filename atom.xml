@@ -15,33 +15,16 @@
     <author>
       <name>Markity</name>
     </author>
-    <category term="CPP" scheme="https://markity.github.io/categories/CPP/"/>
     <content>
-      <![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]>
+      <![CDATA[<p>Hello！我目前是一个后端程序员，目前正在学习图形学，Linux，以及桌面软件等生态，梦想以后成为独立游戏开发者。目前我将在这里记录我的所有成长过程！</p><span id="more"></span><h1 id="Favorite-Things"><a href="#Favorite-Things" class="headerlink" title="Favorite Things"></a>Favorite Things</h1><ul><li>CS2</li><li>瓦罗兰特</li><li>我的世界</li><li>动漫</li></ul><h1 id="熟悉的技术"><a href="#熟悉的技术" class="headerlink" title="熟悉的技术"></a>熟悉的技术</h1><ul><li>Golang及后台开发技术</li><li>Java及后台开发技术</li><li>Epoll&#x2F;Reactor及网络开发技术</li><li>消息&#x2F;IM技术</li><li>社区评论系统</li><li>Raft协议</li></ul><h1 id="正在学习"><a href="#正在学习" class="headerlink" title="正在学习"></a>正在学习</h1><ul><li>Godot</li><li>Games系列课程</li><li>Opengl</li><li>Wayland Client编程</li></ul><h1 id="推荐的书"><a href="#推荐的书" class="headerlink" title="推荐的书"></a>推荐的书</h1><ul><li>C程序设计语言，作者K&amp;R（C语言圣经，黑皮书）</li><li>Linux高性能服务器编程，作者陈硕（除了事件驱动的网络模型，还讲解内存管理相关的最佳实践）</li><li>Go程序设计语言（Go语言圣经，黑皮书）</li></ul>]]>
     </content>
-    <id>https://markity.github.io/hello-world/</id>
-    <link href="https://markity.github.io/hello-world/"/>
+    <id>https://markity.github.io/about/</id>
+    <link href="https://markity.github.io/about/"/>
     <published>2026-04-08T05:34:00.000Z</published>
     <summary>
-      <![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for]]>
+      <![CDATA[<p>Hello！我目前是一个后端程序员，目前正在学习图形学，Linux，以及桌面软件等生态，梦想以后成为独立游戏开发者。目前我将在这里记录我的所有成长过程！</p>]]>
     </summary>
-    <title>Hello World</title>
+    <title>关于博客</title>
     <updated>2026-04-08T05:34:00.000Z</updated>
-  </entry>
-  <entry>
-    <author>
-      <name>Markity</name>
-    </author>
-    <content>
-      <![CDATA[<p>nihaoss</p>]]>
-    </content>
-    <id>https://markity.github.io/aaa/</id>
-    <link href="https://markity.github.io/aaa/"/>
-    <published>2026-04-08T05:20:00.000Z</published>
-    <summary>
-      <![CDATA[<p>nihaoss</p>]]>
-    </summary>
-    <title>test-draft</title>
-    <updated>2026-04-08T05:20:00.000Z</updated>
   </entry>
 </feed>
