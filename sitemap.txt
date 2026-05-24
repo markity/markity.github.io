@@ -1,3 +1,2 @@
-https://markity.github.io/godot-image-tool/
 https://markity.github.io/about/
 https://markity.github.io/

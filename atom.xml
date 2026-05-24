@@ -10,23 +10,7 @@
   <rights>All rights reserved 2026, Markity</rights>
   <subtitle>Sharing knowledge and technology</subtitle>
   <title>Markity Tech Blog</title>
-  <updated>2026-04-08T09:03:39.000Z</updated>
-  <entry>
-    <author>
-      <name>Markity</name>
-    </author>
-    <content>
-      <![CDATA[<p><a href="https://docs.godotengine.org/zh-cn/4.x/getting_started/introduction/introduction_to_godot.html">Godot</a>是一款开源游戏引擎用来做游戏还能做<b>用户界面</b>，也就是UI，可以理解为MFC，Winform，Qt等等。有些软件，例如Pixelorama就是Godot开发的。本文尝试用Godot开发一个Aliyun OSS图片管理器，用来管理我的博客图片。</p><span id="more"></span>配置]]>
-    </content>
-    <id>https://markity.github.io/godot-image-tool/</id>
-    <link href="https://markity.github.io/godot-image-tool/"/>
-    <published>2026-04-08T09:03:39.000Z</published>
-    <summary>
-      <![CDATA[<p><a href="https://docs.godotengine.org/zh-cn/4.x/getting_started/introduction/introduction_to_godot.html">Godot</a>是一款开源游戏引擎用来做游戏还能做<b>用户界面</b>，也就是UI，可以理解为MFC，Winform，Qt等等。有些软件，例如Pixelorama就是Godot开发的。本文尝试用Godot开发一个Aliyun OSS图片管理器，用来管理我的博客图片。</p>]]>
-    </summary>
-    <title>Godot实现一个图片管理器</title>
-    <updated>2026-04-08T09:03:39.000Z</updated>
-  </entry>
+  <updated>2026-04-08T05:34:00.000Z</updated>
   <entry>
     <author>
       <name>Markity</name>
