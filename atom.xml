@@ -10,7 +10,7 @@
   <rights>All rights reserved 2026, Markity</rights>
   <subtitle>Sharing knowledge and technology</subtitle>
   <title>Markity Tech Blog</title>
-  <updated>2026-05-30T17:20:00.000Z</updated>
+  <updated>2026-06-02T10:19:00.000Z</updated>
   <entry>
     <author>
       <name>Markity</name>
@@ -20,12 +20,12 @@
     </content>
     <id>https://markity.github.io/http-proxy/</id>
     <link href="https://markity.github.io/http-proxy/"/>
-    <published>2026-05-30T17:20:00.000Z</published>
+    <published>2026-06-02T10:19:00.000Z</published>
     <summary>
       <![CDATA[<p>本文讲解http代理的原理，以及Go如何实现这样一个代理，希望能帮助读者更好地理解平时使用的翻墙工具。</p>]]>
     </summary>
     <title>探索并实现http代理</title>
-    <updated>2026-05-30T17:20:00.000Z</updated>
+    <updated>2026-06-02T10:19:00.000Z</updated>
   </entry>
   <entry>
     <author>
