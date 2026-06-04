@@ -1,4 +1,4 @@
-https://markity.github.io/http-proxy/
-https://markity.github.io/csharp-concurrent-model/
-https://markity.github.io/about/
-https://markity.github.io/
+https://tech.markity.cn/http-proxy/
+https://tech.markity.cn/csharp-concurrent-model/
+https://tech.markity.cn/about/
+https://tech.markity.cn/
